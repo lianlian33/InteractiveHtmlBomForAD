@@ -10,6 +10,76 @@ function RoundNum(num) {
     return Math.round(num * 100) / 100;
 }
 
+
+function rotatePoint(cPoint, rPoint, angle) {
+    var rad = angle * Math.PI / 180;
+    var newPoint = [
+        (cPoint[0] - rPoint[0]) * Math.cos(rad) - (cPoint[1] - rPoint[1]) * Math.sin(rad) + rPoint[0], 
+        (cPoint[0] - rPoint[0]) * Math.sin(rad) + (cPoint[1] - rPoint[1]) * Math.cos(rad) + rPoint[1]
+    ];
+    var res = [RoundNum(newPoint[0]), -RoundNum(newPoint[1])]; // coordinate system transformed from AD to KiCad
+
+    return res;
+}
+
+
+function get_bbox(Prim) {
+
+    function get_component_bbox(Component) {
+        var bbox = {};
+        var x0, y0, x1, y1;
+        x0 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Left);
+        y0 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Bottom);
+        x1 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Right);
+        y1 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Top);
+        bbox["pos"] = [x0, -y1]; // 
+        bbox["relpos"] = [0, 0];
+        bbox["angle"] = 0;
+        bbox["size"] = [RoundNum(x1 - x0), RoundNum(y1 - y0)];
+        bbox["center"] = [RoundNum(x0 + bbox.size[0] / 2), -RoundNum(y0 + bbox.size[1] / 2)];
+        return bbox;
+    }
+
+    function get_text_bbox(Text) {
+        var bbox = {};
+        var x0, y0, x1, y1;
+        x0 = Normalize(Text.BoundingRectangleForSelection.Left);
+        y0 = Normalize(Text.BoundingRectangleForSelection.Bottom);
+        x1 = Normalize(Text.BoundingRectangleForSelection.Right);
+        y1 = Normalize(Text.BoundingRectangleForSelection.Top);
+        
+        // bbox["pos"] = [x0, -y1];
+        // bbox["relpos"] = [0, 0];
+        // bbox["angle"] = 0;
+        bbox["size"] = [RoundNum(x1 - x0), RoundNum(y1 - y0)];
+
+        bbox["center"] = [RoundNum(x0 + bbox.size[0] / 2), -RoundNum(y0 + bbox.size[1] / 2)];
+
+        // bbox["size"] = [Normalize(Text.X2Location - Text.X1Location), Normalize(Text.Y2Location - Text.Y1Location)];
+        // bbox["pos"] = [Normalize(Text.X1Location) + bbox["size"][0], -(Normalize(Text.Y1Location) + bbox["size"][1])];
+        // bbox["relpos"] = [0, 0];
+        // bbox["angle"] = 0;
+
+        return bbox;
+    }
+
+    switch (Prim.ObjectId) {
+        case eComponentObject:
+            return get_component_bbox(Prim);
+            break;
+        case eTextObject:
+            return get_text_bbox(Prim);
+            break;
+        // case eFillobject:
+        //     oFootprint["drawings"].push({"layer": "B", "drawing": parseFill(Prim)});
+        //     break;
+        // case eRegionObject:
+        //     oFootprint["drawings"].push({"layer": "B", "drawing": parseRegion(Prim)});
+        //     break;
+        default:
+    }
+}
+
 /// 
 function parsePcb(non) {
     //"use strict";
@@ -49,11 +119,6 @@ function parsePcb(non) {
     pcb.Layers.KEEP_OUT_LAYER = String2Layer("Keep Out Layer");
     pcb.Layers.MULTI_LAYER = String2Layer("Multi Layer");
 
-    Number.prototype.decimal2 = function anonymFun_map(non) {
-        return Math.round(this * 100) / 100;
-    };
-
-
     function parseTrack(Prim) {
         var res = {};
         res["type"] = "segment";
@@ -77,48 +142,48 @@ function parsePcb(non) {
         res["layer"] = Prim.Layer;
         // res.net = "";
         // 
-        function arc2svg(cx, cy, radius, startangle, endangle) {
-            var startrad = startangle * Math.PI / 180;
-            var endrad = endangle * Math.PI / 180;
-            var start = [cx + (radius * Math.cos(startrad)), cy + (radius * Math.sin(startrad))];
-            var end = [cx + (radius * Math.cos(endrad)), cy + (radius * Math.sin(endrad))];
+        // function arc2svg(cx, cy, radius, startangle, endangle) {
+        //     var startrad = startangle * Math.PI / 180;
+        //     var endrad = endangle * Math.PI / 180;
+        //     var start = [cx + (radius * Math.cos(startrad)), cy + (radius * Math.sin(startrad))];
+        //     var end = [cx + (radius * Math.cos(endrad)), cy + (radius * Math.sin(endrad))];
 
-            if (start[0] == end[0] && start[1] == end[1]) {
-                var d = ["M", cx - radius, -cy, "a", radius, radius, 0, 1, 0, 2*radius, 0, "a", radius, radius, 0, 1, 0, -2*radius, 0].join(" ");
-                return d;
-            }
+        //     if (start[0] == end[0] && start[1] == end[1]) {
+        //         var d = ["M", cx - radius, -cy, "a", radius, radius, 0, 1, 0, 2*radius, 0, "a", radius, radius, 0, 1, 0, -2*radius, 0].join(" ");
+        //         return d;
+        //     }
 
-            var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
-            var largeArcFlag = da <= 180 ? "0" : "1";
-            var sweepFlag = 0;
-            var d = ["M", start[0], -start[1], "A", radius, radius, 0, largeArcFlag, sweepFlag, end[0], -end[1]].join(" ");
+        //     var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
+        //     var largeArcFlag = da <= 180 ? "0" : "1";
+        //     var sweepFlag = 0;
+        //     var d = ["M", start[0], -start[1], "A", radius, radius, 0, largeArcFlag, sweepFlag, end[0], -end[1]].join(" ");
 
-            return d;            
-        }
+        //     return d;            
+        // }
 
-        function arc2outline(cx, cy, radius, startangle, endangle, width) {
-            var startrad = startangle * Math.PI / 180;
-            var endrad = endangle * Math.PI / 180;
+        // function arc2outline(cx, cy, radius, startangle, endangle, width) {
+        //     var startrad = startangle * Math.PI / 180;
+        //     var endrad = endangle * Math.PI / 180;
 
-            var r0 = width / 2;
-            var r1 = radius + r0;
-            var r2 = radius - r0;
-            var start1 = [cx + (r1 * Math.cos(startrad)), cy + (r1 * Math.sin(startrad))];
-            var end1 = [cx + (r1 * Math.cos(endrad)), cy + (r1 * Math.sin(endrad))];   
-            var start2 = [cx + (r2 * Math.cos(startrad)), cy + (r2 * Math.sin(startrad))];
-            var end2 = [cx + (r2 * Math.cos(endrad)), cy + (r2 * Math.sin(endrad))];  
+        //     var r0 = width / 2;
+        //     var r1 = radius + r0;
+        //     var r2 = radius - r0;
+        //     var start1 = [cx + (r1 * Math.cos(startrad)), cy + (r1 * Math.sin(startrad))];
+        //     var end1 = [cx + (r1 * Math.cos(endrad)), cy + (r1 * Math.sin(endrad))];   
+        //     var start2 = [cx + (r2 * Math.cos(startrad)), cy + (r2 * Math.sin(startrad))];
+        //     var end2 = [cx + (r2 * Math.cos(endrad)), cy + (r2 * Math.sin(endrad))];  
 
-            var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
-            var largeArcFlag = da <= 180 ? "0" : "1";
-            var sweepFlag = 0;
-            var arc1 = ["M", start1[0], -start1[1], "A", r1, r1, 0, largeArcFlag, sweepFlag, end1[0], -end1[1]];
-            var arc2 = ["M", end1[0], -end1[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, end2[0], -end2[1]];
-            var arc3 = ["M", end2[0], -end2[1], "A", r2, r2, 0, largeArcFlag, 1, start2[0], -start2[1]];
-            var arc4 = ["M", start2[0], -start2[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, start1[0], -start1[1]];
-            var d = [arc1.join(" "), arc2.join(" "), arc3.join(" "), arc4.join(" "), "z"].join("");
+        //     var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
+        //     var largeArcFlag = da <= 180 ? "0" : "1";
+        //     var sweepFlag = 0;
+        //     var arc1 = ["M", start1[0], -start1[1], "A", r1, r1, 0, largeArcFlag, sweepFlag, end1[0], -end1[1]];
+        //     var arc2 = ["M", end1[0], -end1[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, end2[0], -end2[1]];
+        //     var arc3 = ["M", end2[0], -end2[1], "A", r2, r2, 0, largeArcFlag, 1, start2[0], -start2[1]];
+        //     var arc4 = ["M", start2[0], -start2[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, start1[0], -start1[1]];
+        //     var d = [arc1.join(" "), arc2.join(" "), arc3.join(" "), arc4.join(" "), "z"].join("");
 
-            return d;
-        }
+        //     return d;
+        // }
 
         // if (Prim.Layer == pcb.layers.KEEP_OUT_LAYER) {
         //     var res2 = {};
@@ -226,7 +291,7 @@ function parsePcb(non) {
             res["chamfratio"] = 0.5;  
 
         } else if (res["shape"] == "roundrect") {
-            res["radius"] = Math.min(res["size"][0], res["size"][1]) * 0.2; // CornerRatio in AD, how to get it? set 0.25 for now, not done.
+            res["radius"] = Normalize(Prim.CornerRadius(Prim.Layer));  //  smd ? th ?
         }
 
         if ("A1".indexOf(Prim.Name) != -1) {
@@ -336,16 +401,16 @@ function parsePcb(non) {
     }
 
 
-    function rotatePoint(tPoint, aPoint, angle) {
-        var rad = angle * Math.PI / 180;
-        var newPoint = [
-            (tPoint[0] - aPoint[0]) * Math.cos(rad) - (tPoint[1] - aPoint[1]) * Math.sin(rad) + aPoint[0], 
-            (tPoint[0] - aPoint[0]) * Math.sin(rad) + (tPoint[1] - aPoint[1]) * Math.cos(rad) + aPoint[1]
-        ];
-        var res = [RoundNum(newPoint[0]), -RoundNum(newPoint[1])]; // coordinate system transformed from AD to KiCad
+    // function rotatePoint(tPoint, aPoint, angle) {
+    //     var rad = angle * Math.PI / 180;
+    //     var newPoint = [
+    //         (tPoint[0] - aPoint[0]) * Math.cos(rad) - (tPoint[1] - aPoint[1]) * Math.sin(rad) + aPoint[0], 
+    //         (tPoint[0] - aPoint[0]) * Math.sin(rad) + (tPoint[1] - aPoint[1]) * Math.cos(rad) + aPoint[1]
+    //     ];
+    //     var res = [RoundNum(newPoint[0]), -RoundNum(newPoint[1])]; // coordinate system transformed from AD to KiCad
 
-        return res;
-    }
+    //     return res;
+    // }
 
     // 99% done
     function parseFill(Prim) {
@@ -379,7 +444,6 @@ function parsePcb(non) {
     function parseRegion(Prim) {
         var res = {};
         var polygons = [];
-        var regionholes = [];
         var count = Prim.MainContour.Count;
 
         if (Prim.Kind == 0 && !Prim.IsKeepout) {
@@ -390,7 +454,7 @@ function parsePcb(non) {
             return res;
         }
 
-        // ?
+        // ? holes : pads and vias
         // count = Prim.HoleCount;
         // for (var k = 0; k < count; k++) {
         //     for (var i = 1; i <= Prim.Holes[k].Count; i++) {
@@ -401,7 +465,6 @@ function parsePcb(non) {
         res["type"] = "polygon";
         res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z"].join(""); 
         res["layer"] = Prim.Layer;
-        // res["regionholes"] = regionholes; // extra
         // res.net = "";
         return res;
     }
@@ -522,14 +585,19 @@ function parsePcb(non) {
         return res;
     }
 
-    // 90% done  // only support default Stroke font for now
+    // 90% done  // use the KiCad's font , not support chinese char.
     function parseText(Prim) {
         var res = {};
         if (Prim.IsHidden) {
             return res;
         }
         else if (Prim.TextKind == eText_BarCode) {
-            return res;  //  an API in AD called ConvetToStrokeArray seems not implemented 
+            return res;  //  an API in AD called ConvetToStrokeArray, how to use it?
+        }
+
+        var len = Prim.Text.length;
+        if (len == 0) {
+            return res;
         }
 
         res["attr"] = [];
@@ -550,15 +618,19 @@ function parsePcb(non) {
         res["angle"] = RoundNum(Prim.Rotation);
         res["layer"] = Prim.Layer;
 
-        var xa, ya;
-        xa = Prim.BoundingRectangle.Left + (Prim.BoundingRectangle.Right - Prim.BoundingRectangle.Left) / 2;
-        ya = Prim.BoundingRectangle.Bottom + (Prim.BoundingRectangle.Top - Prim.BoundingRectangle.Bottom) / 2;
-        xa = Normalize(xa);
-        ya = Normalize(ya);
-        res["pos"] = [xa, -ya];
-        res["thickness"] = Normalize(Prim.Width);
-        res["height"] = Normalize(Prim.Size);
-        res["width"] = RoundNum(res["height"] * 1.1); // single char's width in kicad
+        var bbox = get_bbox(Prim);
+        res["pos"] = bbox["center"];
+
+        if (Prim.TextKind == 0) {
+            res["thickness"] = Normalize(Prim.Width);
+            res["height"] = Normalize(Prim.Size);
+            res["width"] = RoundNum(res["height"] * 1); // single char's width in kicad
+        } else if (Prim.TextKind == 1) {
+            res["thickness"] = Normalize(Prim.Width);
+            res["height"] = Normalize(Prim.TTFTextHeight * 0.7);
+            res["width"] = Normalize(Prim.TTFTextWidth * 0.9 / len);
+        }
+
         // res["horiz_justify"] = 0; // center align, tag 2.3
         res["justify"] = [0, 0];  //
 
@@ -642,22 +714,10 @@ function parsePcb(non) {
         }
         Component.GroupIterator_Destroy(Iter);
 
-        var x0, y0, x1, y1, xa, ya, Dx, Dy;
-        x0 = Component.BoundingRectangleNoNameCommentForSignals.Left;
-        y0 = Component.BoundingRectangleNoNameCommentForSignals.Bottom;
-        x1 = Component.BoundingRectangleNoNameCommentForSignals.Right;
-        y1 = Component.BoundingRectangleNoNameCommentForSignals.Top;
-        Dx = x1 - x0;
-        Dy = y1 - y0;
-        xa = Normalize(x0 + Dx / 2);
-        ya = Normalize(y0 + Dy / 2);
-        bbox["pos"] = [Normalize(x0), -Normalize(y1)];
-        bbox["relpos"] = [0, 0];
-        bbox["angle"] = 0;
-        bbox["size"] = [Normalize(Dx), Normalize(Dy)];
-
+        var bbox = get_bbox(Component);
+        oFootprint["center"] = bbox.center;
+        delete bbox.center;
         oFootprint["bbox"] = bbox;
-        oFootprint["center"] = [xa, -ya];
         oFootprint["pads"] = pads;
         oFootprint["ref"] = Component.Name.Text;
         if (Component.Layer == eTopLayer) {
@@ -722,7 +782,6 @@ function parsePcb(non) {
 
     var Iter, Prim; 
     Iter = pcb.board.BoardIterator_Create;
-    // Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, ePadObject, eViaObject, eFillobject, eRegionObject, eTextObject, eComponentObject, ePolyObject));
     Iter.AddFilter_ObjectSet(MkSet(eComponentObject));
     Iter.AddFilter_LayerSet(AllLayers);
     Iter.AddFilter_Method(eProcessAll);

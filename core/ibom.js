@@ -221,16 +221,21 @@ function save2file(src, filename, noBOM) {
     var noBOM = arguments[2] ? arguments[2] : false; 
     var fso = new ActiveXObject("Scripting.FileSystemObject"); 
     var filename = filename.replace("/", "\\");
-    var arrFolder = filename.split("\\");
-    var len = arrFolder.length - 1;
-    var folder = "";
-    for (var i = 0; i < len; i++) {
-         folder = folder + arrFolder[i];
-         if (!fso.FolderExists(folder)) {
-            fso.CreateFolder(folder);
-         }
-         folder = folder + "\\"; 
-    }
+    // var arrFolder = filename.split("\\");
+    // var len = arrFolder.length - 1;
+    // var folder = "";
+    // for (var i = 0; i < len; i++) {
+    //      folder = folder + arrFolder[i];
+    //      if (!fso.FolderExists(folder)) {
+    //         fso.CreateFolder(folder);
+    //      }
+    //      folder = folder + "\\"; 
+    // }
+    var folder = ExtractFilePath(filename);
+    if (!fso.FolderExists(folder)) {
+        fso.CreateFolder(folder);
+    } 
+
     if (fso.FileExists(filename)) {
         try {
             fso.DeleteFile(filename, true);
