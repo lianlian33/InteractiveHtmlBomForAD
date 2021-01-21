@@ -415,6 +415,10 @@ function parsePcb(non) {
     // 99% done
     function parseFill(Prim) {
         var res = {};
+
+        if (Prim.IsKeepout) {
+            return res;
+        }
         var angle = RoundNum(Prim.Rotation);
         var corner1 = [Normalize(Prim.X1Location), Normalize(Prim.Y1Location)];
         var corner3 = [Normalize(Prim.X2Location), Normalize(Prim.Y2Location)];
@@ -440,36 +444,39 @@ function parsePcb(non) {
         return res;
     }
 
-    // 50% done
+    // 55% done
     function parseRegion(Prim) {
         var res = {};
         var polygons = [];
         var count = Prim.MainContour.Count;
-
-        if (Prim.Kind == 0 && !Prim.IsKeepout) {
+        var holes_svg = [];
+        if (Prim.Kind == 0 && !Prim.IsKeepout) {    // Kind "Board Cutout" not done (Tracks on KeepOutLayer can do it).
             for (var i = 1; i <= count; i++) {
                 polygons.push([Normalize(Prim.MainContour.x(i)), Normalize(-Prim.MainContour.y(i))].join(" "));
-            }         
+                // polygons.push([Normalize(Prim.MainContour.x(i)), Normalize(-Prim.MainContour.y(i))]);
+            }      
+            
+            count = Prim.HoleCount;
+            for (var k = 0; k < count; k++) {
+                var hole = [];
+                for (var i = 1; i <= Prim.Holes(k).Count; i++) {
+                    hole.push([Normalize(Prim.Holes(k).x(i)), Normalize(-Prim.Holes(k).y(i))].join(" "));
+                }
+                holes_svg.push(["M", hole.shift(), "L", hole.join("L"), "Z "].join(""));
+            }
         } else {
             return res;
         }
 
-        // ? holes : pads and vias
-        // count = Prim.HoleCount;
-        // for (var k = 0; k < count; k++) {
-        //     for (var i = 1; i <= Prim.Holes[k].Count; i++) {
-        //         regionholes.push([Normalize(Prim.Holes[k].x(i)), Normalize(-Prim.Holes[k].y(i))]);
-        //     }
-        // }
         // 
         res["type"] = "polygon";
-        res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z"].join(""); 
+        res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z "].join("") + holes_svg.join(""); 
         res["layer"] = Prim.Layer;
         // res.net = "";
         return res;
     }
 
-    // 20% done
+    // 30% done
     function parsePoly(Polygon) {
         // var res = {};
         // var polygons = [];
@@ -496,10 +503,10 @@ function parsePcb(non) {
         while (Prim != null) {
             switch (Prim.ObjectId) {
                 case eArcObject:
-                    drawings.push(parseArc(Prim));
+                    // drawings.push(parseArc(Prim));
                     break;
                 case eTrackObject:
-                    drawings.push(parseTrack(Prim));
+                    // drawings.push(parseTrack(Prim));
                     break;
                 case eRegionObject:
                     drawings.push(parseRegion(Prim));
@@ -870,7 +877,7 @@ function parsePcb(non) {
     
     // rough handling tracks and zones, not done
     // Iter = pcb.board.BoardIterator_Create;
-    // Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, eRegionObject, eFillobject));
+    // Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, eRegionObject, eFillobject, ePolyObject));
     // Iter.AddFilter_LayerSet(MkSet(eTopLayer, eBottomLayer));
     // Iter.AddFilter_Method(eProcessAll);
     // var draws = {};
@@ -889,14 +896,18 @@ function parsePcb(non) {
     //             draws.tracks.push(parseTrack(Prim));
     //             break;
     //         case eArcObject:
-    //             draws.arcs.push(parseArc(Prim));
+    //             // draws.arcs.push(parseArc(Prim));
     //             break;
     //         case eFillobject:
     //             draws.polygons.push(parseFill(Prim));
     //             break;
     //         case eRegionObject:
     //             draws.polygons.push(parseRegion(Prim));
-    //             break;                  
+    //             break;    
+    //         case ePolyObject:
+    //             // draws.polygons.push(parsePoly(Prim));
+    //             draws.polygons = draws.polygons.concat(parsePoly(Prim));
+    //             break;                   
     //         default:
     //     }    
     //     Prim = Iter.NextPCBObject;
