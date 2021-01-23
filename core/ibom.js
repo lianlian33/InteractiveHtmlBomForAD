@@ -344,7 +344,6 @@ function loadExtraData(filename) {
 
 
 function main() {
-    // var t0 = new Date().getTime();
     if (!pcb) {
         return;
     };
@@ -353,7 +352,6 @@ function main() {
     // var extra_data = loadExtraData(filename);
     var extra_data;
 
-    var config = getConfig();
     pcb.pcbdata["bom"] = generateBom(pcb, config, extra_data);
     pcb.pcbdata["ibom_version"] = "v2.3";
 
@@ -366,7 +364,7 @@ function main() {
     // showmessage("t1: "+String(t1-t0)+"   t2: "+String(t2-t1)+"   t3: "+String(t3-t2));
 
     b = 'var pcbdata = JSON.parse(LZString.decompressFromBase64("' + b + '"))';
-    var config = getConfig();
+
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
     filename = pcb.boardpath + "PnPout\\" + pcb.boardname.split(".")[0] + ".html";

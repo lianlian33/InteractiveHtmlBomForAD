@@ -17,5 +17,14 @@ function getConfig(non) {
 		"board_rotation": 0
 	};
 
+	config["include"] = {
+		"tracks": false, // not support arc for now, so parse one arc to a few tracks. slow.
+		"vias": false,  // so many objects in pcbdata slow down the speed of generating bom.
+		"polys": false, 
+		"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
+	};
+
 	return config;
 } 
+
+var config = getConfig();

@@ -1,6 +1,6 @@
 /// export
 ///
-function exportJson() {  // export json of pcb without attr "bom" & "ibom_version"
+function exportJSON() {  // export json of pcb without attr "bom" & "ibom_version"
     var res = {};
     
     if (!pcb) {
@@ -31,7 +31,7 @@ function exportJson() {  // export json of pcb without attr "bom" & "ibom_versio
 }
 
 
-function exportBom() {
+function exportBOM() {
     if (!pcb) {
         return;
     };

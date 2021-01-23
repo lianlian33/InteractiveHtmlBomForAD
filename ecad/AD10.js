@@ -3,7 +3,6 @@
 /// 
 function Normalize(coord) {
     return Math.round(0.0254 * coord / 100) / 100;
-    // return num / 10000;
 }
 
 function RoundNum(num) {
@@ -12,12 +11,12 @@ function RoundNum(num) {
 
 
 function rotatePoint(cPoint, rPoint, angle) {
-    var rad = angle * Math.PI / 180;
+    var rad = Degrees2Radians(angle);
     var newPoint = [
-        (cPoint[0] - rPoint[0]) * Math.cos(rad) - (cPoint[1] - rPoint[1]) * Math.sin(rad) + rPoint[0], 
-        (cPoint[0] - rPoint[0]) * Math.sin(rad) + (cPoint[1] - rPoint[1]) * Math.cos(rad) + rPoint[1]
+        (rPoint[0] - cPoint[0]) * Math.cos(rad) - (rPoint[1] - cPoint[1]) * Math.sin(rad) + cPoint[0], 
+        (rPoint[0] - cPoint[0]) * Math.sin(rad) + (rPoint[1] - cPoint[1]) * Math.cos(rad) + cPoint[1]
     ];
-    var res = [RoundNum(newPoint[0]), -RoundNum(newPoint[1])]; // coordinate system transformed from AD to KiCad
+    var res = [RoundNum(newPoint[0]), RoundNum(newPoint[1])]; 
 
     return res;
 }
@@ -127,6 +126,13 @@ function parsePcb(non) {
         res["width"] = Normalize(Prim.Width);
         res["layer"] = Prim.Layer;
         // res.net = "";
+        if (Prim.InPolygon) {
+            var res2 = {};
+            res2["type"] = "polygon";
+            res2["svgpath"] = ["M", res.start, "L", res.end].join(" ");
+            res2["layer"] = res.layer;
+            return res2;
+        } 
         return res;
     }
 
@@ -142,28 +148,76 @@ function parsePcb(non) {
         res["layer"] = Prim.Layer;
         // res.net = "";
         // 
-        // function arc2svg(cx, cy, radius, startangle, endangle) {
-        //     var startrad = startangle * Math.PI / 180;
-        //     var endrad = endangle * Math.PI / 180;
-        //     var start = [cx + (radius * Math.cos(startrad)), cy + (radius * Math.sin(startrad))];
-        //     var end = [cx + (radius * Math.cos(endrad)), cy + (radius * Math.sin(endrad))];
+        function arc2path(cx, cy, radius, startangle, endangle) {
+            var startrad = Degrees2Radians(startangle);
+            var endrad = Degrees2Radians(endangle);
+            var start = [cx + (radius * Math.cos(startrad)), cy + (radius * Math.sin(startrad))];
+            var end = [cx + (radius * Math.cos(endrad)), cy + (radius * Math.sin(endrad))];
 
-        //     if (start[0] == end[0] && start[1] == end[1]) {
-        //         var d = ["M", cx - radius, -cy, "a", radius, radius, 0, 1, 0, 2*radius, 0, "a", radius, radius, 0, 1, 0, -2*radius, 0].join(" ");
-        //         return d;
-        //     }
+            if (start[0] == end[0] && start[1] == end[1]) {
+                var d = ["M", cx - radius, -cy, "a", radius, radius, 0, 1, 0, 2*radius, 0, "a", radius, radius, 0, 1, 0, -2*radius, 0].join(" ");
+                return d;
+            }
 
-        //     var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
-        //     var largeArcFlag = da <= 180 ? "0" : "1";
-        //     var sweepFlag = 0;
-        //     var d = ["M", start[0], -start[1], "A", radius, radius, 0, largeArcFlag, sweepFlag, end[0], -end[1]].join(" ");
+            var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
+            var largeArcFlag = da <= 180 ? "0" : "1";
+            var sweepFlag = 0;
+            var d = ["M", RoundNum(start[0]), RoundNum(-start[1]), "A", radius, radius, 0, largeArcFlag, sweepFlag, RoundNum(end[0]), RoundNum(-end[1])].join(" ");
 
-        //     return d;            
-        // }
+            return d;            
+        }
+
+        function arc2tracks(cx, cy, radius, startangle, endangle) {
+            var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
+            var n;
+            if (da <= 90 && da >= 0) {
+                n = 4;
+            } else if (da <= 180 && da > 90) {
+                n = 8;
+            } else if (da <= 270 && da > 180) {
+                n = 16;
+            } else if (da <= 360 && da > 270) {
+                n = 32;
+            }
+
+            var o = [cx + radius, cy];
+            var start = rotatePoint([cx, cy], o, startangle);
+
+            var points = [];
+            var step = da / n;
+            for (var i = 0; i <= n; i++) {
+                points.push(rotatePoint([cx, cy], o, startangle + i * step));
+            }
+
+            var tracks = [];
+            var len = points.length - 1;
+            if (Prim.IsFreePrimitive) {
+                for (var i = 0; i < len; i++) {
+                    tracks.push({
+                        "type": "segment",
+                        "start": [points[i+0][0], -points[i+0][1]],
+                        "end": [points[i+1][0], -points[i+1][1]],
+                        "layer": Prim.Layer,
+                        "width": res["width"]
+                    })
+                }   
+            } else {
+                for (var i = 0; i < len; i++) {
+                    tracks.push({
+                        "type": "polygon",
+                        "svgpath": ["M", points[i+0][0], -points[i+0][1], points[i+1][0], -points[i+1][1]].join(" "),
+                        "layer": Prim.Layer
+                    })
+                }         
+            }
+
+            return tracks;
+        }
+
 
         // function arc2outline(cx, cy, radius, startangle, endangle, width) {
-        //     var startrad = startangle * Math.PI / 180;
-        //     var endrad = endangle * Math.PI / 180;
+        //     var startrad = Degrees2Radians(startangle);
+        //     var endrad = Degrees2Radians(endangle);
 
         //     var r0 = width / 2;
         //     var r1 = radius + r0;
@@ -191,15 +245,18 @@ function parsePcb(non) {
         //     res2["svgpath"] = arc2outline(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
         //     res2["layer"] = Prim.Layer;
         // }
-        // if (Prim.InPolygon) {
-        //     var res2 = {};
-        //     res2["type"] = "polygon";
-        //     // res2["type"] = "arc";
-        //     // res2["width"] = res["width"];
-        //     res2["svgpath"] = arc2outline(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle, res["width"]);
-        //     res2["layer"] = Prim.Layer;
-        //     return res2;
-        // }
+        if (Prim.InPolygon) {
+            // var res2 = {};
+            // res2["type"] = "polygon";
+            // res2["svgpath"] = arc2path(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
+            // res2["layer"] = Prim.Layer;
+            // return res2;
+            return arc2tracks(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
+        }   
+
+        if (Prim.IsFreePrimitive && (Prim.Layer == eTopLayer || Prim.Layer == eBottomLayer)) {
+            return arc2tracks(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);     
+        }
 
         return res;
     }
@@ -400,18 +457,6 @@ function parsePcb(non) {
         return vias;
     }
 
-
-    // function rotatePoint(tPoint, aPoint, angle) {
-    //     var rad = angle * Math.PI / 180;
-    //     var newPoint = [
-    //         (tPoint[0] - aPoint[0]) * Math.cos(rad) - (tPoint[1] - aPoint[1]) * Math.sin(rad) + aPoint[0], 
-    //         (tPoint[0] - aPoint[0]) * Math.sin(rad) + (tPoint[1] - aPoint[1]) * Math.cos(rad) + aPoint[1]
-    //     ];
-    //     var res = [RoundNum(newPoint[0]), -RoundNum(newPoint[1])]; // coordinate system transformed from AD to KiCad
-
-    //     return res;
-    // }
-
     // 99% done
     function parseFill(Prim) {
         var res = {};
@@ -427,12 +472,12 @@ function parsePcb(non) {
         var pos = [corner1[0] + width / 2, corner1[1] + height / 2];
         var corner2 = [corner1[0], corner3[1]];
         var corner4 = [corner3[0], corner1[1]];
-        var tcorner1 = rotatePoint(corner1, pos, angle);
-        var tcorner2 = rotatePoint(corner2, pos, angle);
-        var tcorner3 = rotatePoint(corner3, pos, angle);
-        var tcorner4 = rotatePoint(corner4, pos, angle);
+        var tcorner1 = rotatePoint(pos, corner1, angle);
+        var tcorner2 = rotatePoint(pos, corner2, angle);
+        var tcorner3 = rotatePoint(pos, corner3, angle);
+        var tcorner4 = rotatePoint(pos, corner4, angle);
 
-        res["svgpath"] =  ["M", tcorner1.join(" "), "L", tcorner2.join(" "), "L", tcorner3.join(" "), "L", tcorner4.join(" "), "Z"].join("");
+        res["svgpath"] =  ["M", tcorner1[0], -tcorner1[1], "L", tcorner2[0], -tcorner2[1], "L", tcorner3[0], -tcorner3[1], "L", tcorner4[0], -tcorner4[1], "Z"].join(" ");
         res["type"] = "polygon";
         // res["type"] = "segment";
         res["layer"] = Prim.Layer;
@@ -453,7 +498,6 @@ function parsePcb(non) {
         if (Prim.Kind == 0 && !Prim.IsKeepout) {    // Kind "Board Cutout" not done (Tracks on KeepOutLayer can do it).
             for (var i = 1; i <= count; i++) {
                 polygons.push([Normalize(Prim.MainContour.x(i)), Normalize(-Prim.MainContour.y(i))].join(" "));
-                // polygons.push([Normalize(Prim.MainContour.x(i)), Normalize(-Prim.MainContour.y(i))]);
             }      
             
             count = Prim.HoleCount;
@@ -468,7 +512,6 @@ function parsePcb(non) {
             return res;
         }
 
-        // 
         res["type"] = "polygon";
         res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z "].join("") + holes_svg.join(""); 
         res["layer"] = Prim.Layer;
@@ -476,14 +519,8 @@ function parsePcb(non) {
         return res;
     }
 
-    // 30% done
+    // 50% done
     function parsePoly(Polygon) {
-        // var res = {};
-        // var polygons = [];
-        // var tracks = [];
-        // var arcs = [];
-        // var regions = [];
-
         var drawings = [];
         // var count = Polygon.PointCount; 
         // for (var i = 0; i <= count; i++) {
@@ -494,19 +531,17 @@ function parsePcb(non) {
         //         polygons.push({"x": Normalize(Polygon.Segments(i).vx), "y": Normalize(-Polygon.Segments(i).vy)});
         //     }           
         // }   
-        // res["svgpath"] = toPath(polygons);
-        // res["type"] = "polygon";
-        // res["layer"] = Prim.Layer;   
+        var hatched_drawings = [];
 
         var Iter = Polygon.GroupIterator_Create;
         var Prim = Iter.FirstPCBObject;
         while (Prim != null) {
             switch (Prim.ObjectId) {
                 case eArcObject:
-                    // drawings.push(parseArc(Prim));
+                    hatched_drawings = hatched_drawings.concat(parseArc(Prim));
                     break;
                 case eTrackObject:
-                    // drawings.push(parseTrack(Prim));
+                    hatched_drawings.push(parseTrack(Prim));
                     break;
                 case eRegionObject:
                     drawings.push(parseRegion(Prim));
@@ -515,6 +550,19 @@ function parsePcb(non) {
             Prim = Iter.NextPCBObject;
         }
 
+        var len = hatched_drawings.length;
+        if (len > 1) {
+            var hatchedAll2One = {};
+            var pathArr = [];
+            for (var i = 0; i < len; i++) {
+                pathArr.push(hatched_drawings[i].svgpath);
+            }
+            hatchedAll2One["width"] = Normalize(Polygon.TrackSize);
+            hatchedAll2One["type"] = "polygon"
+            hatchedAll2One["svgpath"] = pathArr.join(" ");
+            hatchedAll2One["layer"] = hatched_drawings[0].layer;
+            drawings.push(hatchedAll2One);
+        }
         return drawings;
     }
 
@@ -633,9 +681,9 @@ function parsePcb(non) {
             res["height"] = Normalize(Prim.Size);
             res["width"] = RoundNum(res["height"] * 1); // single char's width in kicad
         } else if (Prim.TextKind == 1) {
-            res["thickness"] = Normalize(Prim.Width);
-            res["height"] = Normalize(Prim.TTFTextHeight * 0.7);
+            res["height"] = Normalize(Prim.TTFTextHeight * 0.6);
             res["width"] = Normalize(Prim.TTFTextWidth * 0.9 / len);
+            res["thickness"] = Normalize(res["height"] * 0.1);
         }
 
         // res["horiz_justify"] = 0; // center align, tag 2.3
@@ -820,7 +868,9 @@ function parsePcb(non) {
                     footprintNoBom.pads = footprintNoBom.pads.concat(parsePad(Prim));
                     break;
                 case eViaObject:
-                    // footprintNoBom.pads = footprintNoBom.pads.concat(parseVia(Prim));
+                    if (config.include.vias) {
+                        footprintNoBom.pads = footprintNoBom.pads.concat(parseVia(Prim));
+                    }
                     break;
                 default:
             }
@@ -844,11 +894,6 @@ function parsePcb(non) {
     Iter.AddFilter_Method(eProcessAll);
     Prim = Iter.FirstPCBObject;
     while (Prim != null) {
-        if (!Prim.IsFreePrimitive && !Prim.InComponent) {
-            Prim = Iter.NextPCBObject;
-            continue;   // polygons in AD has "Fill Mode" of "Hatched(Tracks/Arcs)", skip them
-        }
-
         switch (Prim.ObjectId) {
             case eTextObject:
                 pcb.texts.push(parseText(Prim));
@@ -876,46 +921,64 @@ function parsePcb(non) {
     pcb.pcbdata["fabrication"] = parseDrawingsOnLayers(drawings, pcb.Layers.TOP_DIMENSIONS_LAYER, pcb.Layers.BOT_DIMENSIONS_LAYER);
     
     // rough handling tracks and zones, not done
-    // Iter = pcb.board.BoardIterator_Create;
-    // Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, eRegionObject, eFillobject, ePolyObject));
-    // Iter.AddFilter_LayerSet(MkSet(eTopLayer, eBottomLayer));
-    // Iter.AddFilter_Method(eProcessAll);
-    // var draws = {};
-    // draws["tracks"] = [];
-    // draws["polygons"] = [];
-    // draws["arcs"] = [];
-    // Prim = Iter.FirstPCBObject;
-    // while (Prim != null) {
-    //     if (Prim.InComponent || Prim.InPolygon) {
-    //         Prim = Iter.NextPCBObject;
-    //         continue; 
-    //     }
+    Iter = pcb.board.BoardIterator_Create;
+    var objset = [];
+    if (config.include.tracks && !config.include.polys) {
+        Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject));
+    } else if (config.include.polys && !config.include.tracks) {
+        Iter.AddFilter_ObjectSet(MkSet(eFillobject, eRegionObject, ePolyObject));
+    } else if (config.include.polys && config.include.tracks) {
+        Iter.AddFilter_ObjectSet(MkSet(eFillobject, eRegionObject, ePolyObject, eArcObject, eTrackObject));
+    } else {
+        Iter.AddFilter_ObjectSet(MkSet());
+    }
 
-    //     switch (Prim.ObjectId) {
-    //         case eTrackObject:
-    //             draws.tracks.push(parseTrack(Prim));
-    //             break;
-    //         case eArcObject:
-    //             // draws.arcs.push(parseArc(Prim));
-    //             break;
-    //         case eFillobject:
-    //             draws.polygons.push(parseFill(Prim));
-    //             break;
-    //         case eRegionObject:
-    //             draws.polygons.push(parseRegion(Prim));
-    //             break;    
-    //         case ePolyObject:
-    //             // draws.polygons.push(parsePoly(Prim));
-    //             draws.polygons = draws.polygons.concat(parsePoly(Prim));
-    //             break;                   
-    //         default:
-    //     }    
-    //     Prim = Iter.NextPCBObject;
-    // }
-    // pcb.board.BoardIterator_Destroy(Iter);
+    Iter.AddFilter_LayerSet(MkSet(eTopLayer, eBottomLayer));
+    Iter.AddFilter_Method(eProcessAll);
+    var draws = {};
+    draws["tracks"] = [];
+    draws["polygons"] = [];
+    draws["arcs"] = [];
+    Prim = Iter.FirstPCBObject;
+    while (Prim != null) {
+        if (Prim.InComponent || Prim.InPolygon) {
+            Prim = Iter.NextPCBObject;
+            continue; 
+        }
 
-    // pcb.pcbdata["tracks"] = parseDrawingsOnLayers(draws.tracks, eTopLayer, eBottomLayer);  
-    // pcb.pcbdata["zones"] = parseDrawingsOnLayers(draws.polygons, eTopLayer, eBottomLayer);
+        switch (Prim.ObjectId) {
+            case eTrackObject:
+                draws.tracks.push(parseTrack(Prim));
+                break;
+            case eArcObject:
+                if (Prim.IsFreePrimitive) {
+                    draws.tracks = draws.tracks.concat(parseArc(Prim));
+                } else {
+                    // draws.arcs.push(parseArc(Prim));
+                }
+                break;
+            case eFillobject:
+                draws.polygons.push(parseFill(Prim));
+                break;
+            case eRegionObject:
+                draws.polygons.push(parseRegion(Prim));
+                break;    
+            case ePolyObject:
+                if ((Prim.PolyHatchStyle != ePolySolid) && (!config.include.polyHatched)) {
+                    break; 
+                }
+                draws.polygons = draws.polygons.concat(parsePoly(Prim));
+                break;                   
+            default:
+        }    
+        Prim = Iter.NextPCBObject;
+    }
+    pcb.board.BoardIterator_Destroy(Iter);
+
+    if (config.include.tracks || config.include.polys) {
+        pcb.pcbdata["tracks"] = parseDrawingsOnLayers(draws.tracks, eTopLayer, eBottomLayer);  
+        pcb.pcbdata["zones"] = parseDrawingsOnLayers(draws.polygons, eTopLayer, eBottomLayer);  
+    }
 
     function parseFontStr(s) {
         pcb.pcbdata["font_data"] = {};
@@ -985,6 +1048,3 @@ function parsePcb(non) {
 } 
 // var t0 = new Date().getTime();
 var pcb = parsePcb();
-
-
-
