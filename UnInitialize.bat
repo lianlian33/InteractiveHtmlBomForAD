@@ -1,15 +1,17 @@
 @echo off
-cd /d %~dp0
+@cd /d %~dp0
 
 
-set path=%~dp0
+@set path=%~dp0
 
 rem set str=%path:\=\\%
 
-cd .>rootPath.js
+@cd .>rootPath.js
 
-cd .>%path%dist\InteractiveHtmlBomForAD.js
-del %path%dist\InteractiveHtmlBomForAD.jsPreview
-rd /s /q History
+@cd .>dist\InteractiveHtmlBomForAD.js
+@del dist\InteractiveHtmlBomForAD.jsPreview
+@del dist\mainWin.jsPreview
+@del config.ini
+@rd /s /q History
 
 rem pause

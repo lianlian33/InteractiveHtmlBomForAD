@@ -1,24 +1,30 @@
 
 /// AD10.js
 /// 
-function Normalize(coord) {
-    return Math.round(0.0254 * coord / 100) / 100;
-}
+// function Normalize(coord) {
+//     return Math.round(0.0254 * coord / 100) / 100;
+// }
 
-function RoundNum(num) {
-    return Math.round(num * 100) / 100;
-}
+// function RoundNum(num) {
+//     return Math.round(num * 100) / 100;
+// }
+
+Number.prototype.round = function anonymFun_round(n) {
+    var n = n || 2;
+    if (n == 2 || n < 0) {
+        return Math.round(this * 100) / 100;
+    }
+    var d = Math.pow(10, n);
+    return Math.round(this * d) / d;
+};
 
 
 function rotatePoint(cPoint, rPoint, angle) {
     var rad = Degrees2Radians(angle);
-    var newPoint = [
-        (rPoint[0] - cPoint[0]) * Math.cos(rad) - (rPoint[1] - cPoint[1]) * Math.sin(rad) + cPoint[0], 
-        (rPoint[0] - cPoint[0]) * Math.sin(rad) + (rPoint[1] - cPoint[1]) * Math.cos(rad) + cPoint[1]
+    return [
+        ((rPoint[0] - cPoint[0]) * Math.cos(rad) - (rPoint[1] - cPoint[1]) * Math.sin(rad) + cPoint[0]).round(), 
+        -((rPoint[0] - cPoint[0]) * Math.sin(rad) + (rPoint[1] - cPoint[1]) * Math.cos(rad) + cPoint[1]).round()
     ];
-    var res = [RoundNum(newPoint[0]), RoundNum(newPoint[1])]; 
-
-    return res;
 }
 
 
@@ -27,37 +33,32 @@ function get_bbox(Prim) {
     function get_component_bbox(Component) {
         var bbox = {};
         var x0, y0, x1, y1;
-        x0 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Left);
-        y0 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Bottom);
-        x1 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Right);
-        y1 = Normalize(Component.BoundingRectangleNoNameCommentForSignals.Top);
-        bbox["pos"] = [x0, -y1]; // 
+        x0 = CoordToMMs(Component.BoundingRectangleNoNameCommentForSignals.Left);
+        y0 = CoordToMMs(Component.BoundingRectangleNoNameCommentForSignals.Bottom);
+        x1 = CoordToMMs(Component.BoundingRectangleNoNameCommentForSignals.Right);
+        y1 = CoordToMMs(Component.BoundingRectangleNoNameCommentForSignals.Top);
+        bbox["pos"] = [x0.round(), -y1.round()]; // 
         bbox["relpos"] = [0, 0];
         bbox["angle"] = 0;
-        bbox["size"] = [RoundNum(x1 - x0), RoundNum(y1 - y0)];
-        bbox["center"] = [RoundNum(x0 + bbox.size[0] / 2), -RoundNum(y0 + bbox.size[1] / 2)];
+        bbox["size"] = [(x1 - x0).round(), (y1 - y0).round()];
+        bbox["center"] = [(x0 + bbox.size[0] / 2).round(), -(y0 + bbox.size[1] / 2).round()];
         return bbox;
     }
 
     function get_text_bbox(Text) {
         var bbox = {};
         var x0, y0, x1, y1;
-        x0 = Normalize(Text.BoundingRectangleForSelection.Left);
-        y0 = Normalize(Text.BoundingRectangleForSelection.Bottom);
-        x1 = Normalize(Text.BoundingRectangleForSelection.Right);
-        y1 = Normalize(Text.BoundingRectangleForSelection.Top);
+        x0 = CoordToMMs(Text.BoundingRectangleForSelection.Left);
+        y0 = CoordToMMs(Text.BoundingRectangleForSelection.Bottom);
+        x1 = CoordToMMs(Text.BoundingRectangleForSelection.Right);
+        y1 = CoordToMMs(Text.BoundingRectangleForSelection.Top);
         
         // bbox["pos"] = [x0, -y1];
         // bbox["relpos"] = [0, 0];
         // bbox["angle"] = 0;
-        bbox["size"] = [RoundNum(x1 - x0), RoundNum(y1 - y0)];
+        bbox["size"] = [(x1 - x0).round(), (y1 - y0).round()];
 
-        bbox["center"] = [RoundNum(x0 + bbox.size[0] / 2), -RoundNum(y0 + bbox.size[1] / 2)];
-
-        // bbox["size"] = [Normalize(Text.X2Location - Text.X1Location), Normalize(Text.Y2Location - Text.Y1Location)];
-        // bbox["pos"] = [Normalize(Text.X1Location) + bbox["size"][0], -(Normalize(Text.Y1Location) + bbox["size"][1])];
-        // bbox["relpos"] = [0, 0];
-        // bbox["angle"] = 0;
+        bbox["center"] = [(x0 + bbox.size[0] / 2).round(), -(y0 + bbox.size[1] / 2).round()];
 
         return bbox;
     }
@@ -69,12 +70,7 @@ function get_bbox(Prim) {
         case eTextObject:
             return get_text_bbox(Prim);
             break;
-        // case eFillobject:
-        //     oFootprint["drawings"].push({"layer": "B", "drawing": parseFill(Prim)});
-        //     break;
-        // case eRegionObject:
-        //     oFootprint["drawings"].push({"layer": "B", "drawing": parseRegion(Prim)});
-        //     break;
+
         default:
     }
 }
@@ -99,6 +95,7 @@ function parsePcb(non) {
     pcb["Layers"] = {};
     pcb.Layers.OUTLINE_LAYER = String2Layer("Keep Out Layer");
     // pcb.Layers.OUTLINE_LAYER = eMechanical1;
+    
     pcb.Layers.INFO_LAYER = eMechanical2;
     pcb.Layers.TOP_DIMENSIONS_LAYER = eMechanical11;
     pcb.Layers.BOT_DIMENSIONS_LAYER = eMechanical12;
@@ -120,34 +117,29 @@ function parsePcb(non) {
 
     function parseTrack(Prim) {
         var res = {};
-        res["type"] = "segment";
-        res["start"] = [Normalize(Prim.x1), -Normalize(Prim.y1)];
-        res["end"] = [Normalize(Prim.x2), -Normalize(Prim.y2)];
-        res["width"] = Normalize(Prim.Width);
+        var start = [CoordToMMs(Prim.x1).round(), -CoordToMMs(Prim.y1).round()];
+        var end = [CoordToMMs(Prim.x2).round(), -CoordToMMs(Prim.y2).round()];
         res["layer"] = Prim.Layer;
-        // res.net = "";
         if (Prim.InPolygon) {
-            var res2 = {};
-            res2["type"] = "polygon";
-            res2["svgpath"] = ["M", res.start, "L", res.end].join(" ");
-            res2["layer"] = res.layer;
-            return res2;
+            res["type"] = "polygon";
+            res["svgpath"] = ["M", start, "L", end].join(" ");
+        } else {
+            res["type"] = "segment";
+            res["start"] = start;
+            res["end"] = end;
+            res["width"] = CoordToMMs(Prim.Width).round();
         } 
+
+        if (Prim.InNet) {
+            // res["net"] = Prim.Net.Name;
+        };
+
         return res;
     }
 
     function parseArc(Prim) {
         var res = {};
-        res["type"] = "arc";
-        res["width"] = Normalize(Prim.LineWidth);
-
-        res["startangle"] = -RoundNum(Prim.EndAngle);
-        res["endangle"] = -RoundNum(Prim.StartAngle);
-        res["start"] = [Normalize(Prim.XCenter), -Normalize(Prim.YCenter)];
-        res["radius"] = Normalize(Prim.Radius);
-        res["layer"] = Prim.Layer;
-        // res.net = "";
-        // 
+        var width = CoordToMMs(Prim.LineWidth).round();
         function arc2path(cx, cy, radius, startangle, endangle) {
             var startrad = Degrees2Radians(startangle);
             var endrad = Degrees2Radians(endangle);
@@ -162,7 +154,7 @@ function parsePcb(non) {
             var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
             var largeArcFlag = da <= 180 ? "0" : "1";
             var sweepFlag = 0;
-            var d = ["M", RoundNum(start[0]), RoundNum(-start[1]), "A", radius, radius, 0, largeArcFlag, sweepFlag, RoundNum(end[0]), RoundNum(-end[1])].join(" ");
+            var d = ["M", start[0].round(), -start[1].round(), "A", radius, radius, 0, largeArcFlag, sweepFlag, end[0].round(), -end[1].round()].join(" ");
 
             return d;            
         }
@@ -181,7 +173,7 @@ function parsePcb(non) {
             }
 
             var o = [cx + radius, cy];
-            var start = rotatePoint([cx, cy], o, startangle);
+            // var start = rotatePoint([cx, cy], o, startangle);
 
             var points = [];
             var step = da / n;
@@ -191,74 +183,45 @@ function parsePcb(non) {
 
             var tracks = [];
             var len = points.length - 1;
-            if (Prim.IsFreePrimitive) {
+            if (Prim.InPolygon) {
                 for (var i = 0; i < len; i++) {
                     tracks.push({
-                        "type": "segment",
-                        "start": [points[i+0][0], -points[i+0][1]],
-                        "end": [points[i+1][0], -points[i+1][1]],
-                        "layer": Prim.Layer,
-                        "width": res["width"]
+                        "type": "polygon",
+                        // "svgpath": ["M", points[i+0][0], -points[i+0][1], points[i+1][0], -points[i+1][1]].join(" "),
+                        "svgpath": ["M", points[i+0], points[i+1]].join(" "),
+                        "layer": Prim.Layer
                     })
                 }   
             } else {
                 for (var i = 0; i < len; i++) {
                     tracks.push({
-                        "type": "polygon",
-                        "svgpath": ["M", points[i+0][0], -points[i+0][1], points[i+1][0], -points[i+1][1]].join(" "),
-                        "layer": Prim.Layer
+                        "type": "segment",
+                        // "start": [points[i+0][0], -points[i+0][1]],
+                        // "end": [points[i+1][0], -points[i+1][1]],
+                        "start": points[i+0],
+                        "end": points[i+1],
+                        "layer": Prim.Layer,
+                        "width": width
                     })
-                }         
+                }     
             }
 
             return tracks;
         }
 
-
-        // function arc2outline(cx, cy, radius, startangle, endangle, width) {
-        //     var startrad = Degrees2Radians(startangle);
-        //     var endrad = Degrees2Radians(endangle);
-
-        //     var r0 = width / 2;
-        //     var r1 = radius + r0;
-        //     var r2 = radius - r0;
-        //     var start1 = [cx + (r1 * Math.cos(startrad)), cy + (r1 * Math.sin(startrad))];
-        //     var end1 = [cx + (r1 * Math.cos(endrad)), cy + (r1 * Math.sin(endrad))];   
-        //     var start2 = [cx + (r2 * Math.cos(startrad)), cy + (r2 * Math.sin(startrad))];
-        //     var end2 = [cx + (r2 * Math.cos(endrad)), cy + (r2 * Math.sin(endrad))];  
-
-        //     var da = startangle > endangle ? endangle - startangle + 360 : endangle - startangle;
-        //     var largeArcFlag = da <= 180 ? "0" : "1";
-        //     var sweepFlag = 0;
-        //     var arc1 = ["M", start1[0], -start1[1], "A", r1, r1, 0, largeArcFlag, sweepFlag, end1[0], -end1[1]];
-        //     var arc2 = ["M", end1[0], -end1[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, end2[0], -end2[1]];
-        //     var arc3 = ["M", end2[0], -end2[1], "A", r2, r2, 0, largeArcFlag, 1, start2[0], -start2[1]];
-        //     var arc4 = ["M", start2[0], -start2[1], "A", r0, r0, 0, largeArcFlag, sweepFlag, start1[0], -start1[1]];
-        //     var d = [arc1.join(" "), arc2.join(" "), arc3.join(" "), arc4.join(" "), "z"].join("");
-
-        //     return d;
-        // }
-
-        // if (Prim.Layer == pcb.layers.KEEP_OUT_LAYER) {
-        //     var res2 = {};
-        //     res2["type"] = "arc";
-        //     res2["svgpath"] = arc2outline(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
-        //     res2["layer"] = Prim.Layer;
-        // }
-        if (Prim.InPolygon) {
-            // var res2 = {};
-            // res2["type"] = "polygon";
-            // res2["svgpath"] = arc2path(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
-            // res2["layer"] = Prim.Layer;
-            // return res2;
-            return arc2tracks(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);
-        }   
-
-        if (Prim.IsFreePrimitive && (Prim.Layer == eTopLayer || Prim.Layer == eBottomLayer)) {
-            return arc2tracks(Normalize(Prim.XCenter), Normalize(Prim.YCenter), Normalize(Prim.Radius), Prim.StartAngle, Prim.EndAngle);     
+        // if (Prim.IsFreePrimitive && (Prim.Layer == eTopLayer || Prim.Layer == eBottomLayer)) {
+        if (Prim.Layer == eTopLayer || Prim.Layer == eBottomLayer) {
+            return arc2tracks(CoordToMMs(Prim.XCenter), CoordToMMs(Prim.YCenter), CoordToMMs(Prim.Radius), Prim.StartAngle, Prim.EndAngle);     
+        } else {
+            res["type"] = "arc";
+            res["width"] = width;
+            res["startangle"] = -Prim.EndAngle.round();
+            res["endangle"] = -Prim.StartAngle.round();
+            res["start"] = [CoordToMMs(Prim.XCenter).round(), -CoordToMMs(Prim.YCenter).round()];
+            res["radius"] = CoordToMMs(Prim.Radius).round();
+            res["layer"] = Prim.Layer;
+            return res;
         }
-
-        return res;
     }
 
     // 90% done
@@ -270,25 +233,25 @@ function parsePcb(non) {
         if (Prim.Layer == eTopLayer) {
             layers.push("F");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.TopXSize), Normalize(Prim.TopYSize)];
+            res["size"] = [CoordToMMs(Prim.TopXSize).round(), CoordToMMs(Prim.TopYSize).round()];
         }
         else if (Prim.Layer == eBottomLayer) {
             layers.push("B");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.BotXSize), Normalize(Prim.BotYSize)];
+            res["size"] = [CoordToMMs(Prim.BotXSize).round(), CoordToMMs(Prim.BotYSize).round()];
         }
         else {
             layers.splice(0, 0, "F", "B");
             res["type"] = "th";
-            res["size"] = [Normalize(Prim.TopXSize), Normalize(Prim.TopYSize)];  
+            res["size"] = [CoordToMMs(Prim.TopXSize).round(), CoordToMMs(Prim.TopYSize).round()];  
         }
 
         res["layers"] = layers;
-        res["pos"] = [Normalize(Prim.x), -Normalize(Prim.y)]; 
-        res["angle"] = -RoundNum(Prim.Rotation);
+        res["pos"] = [CoordToMMs(Prim.x).round(), -CoordToMMs(Prim.y).round()]; 
+        res["angle"] = -Prim.Rotation.round();
         
         // not done 
-        if (res["type"] == "th") {
+        if (Prim.Layer == eMultiLayer) {
             switch (Prim.TopShape) {
                 case 1:  //  Round in AD
                     res["shape"] = (res["size"][0] == res["size"][1]) ? "circle" : "oval";  // done
@@ -343,12 +306,12 @@ function parsePcb(non) {
         }   
 
         if (res["shape"] == "chamfrect") {  // not done
-            res["radius"] = Math.min(res["size"][0], res["size"][1]) * 0.5;
+            res["radius"] = (Math.min(res["size"][0], res["size"][1]) * 0.5).round();
             res["chamfpos"] = res["pos"];
             res["chamfratio"] = 0.5;  
 
         } else if (res["shape"] == "roundrect") {
-            res["radius"] = Normalize(Prim.CornerRadius(Prim.Layer));  //  smd ? th ?
+            res["radius"] = CoordToMMs(Prim.CornerRadius(Prim.Layer)).round();  //  smd ? th ?
         }
 
         if ("A1".indexOf(Prim.Name) != -1) {
@@ -358,22 +321,22 @@ function parsePcb(non) {
         if (res["type"] == "th") {
             switch (Prim.HoleType) {
                 case 0: // circle
-                    res["drillsize"] = [Normalize(Prim.HoleSize), Normalize(Prim.HoleSize)];
+                    res["drillsize"] = [CoordToMMs(Prim.HoleSize).round(), CoordToMMs(Prim.HoleSize).round()];
                     res["drillshape"] = "circle";
                     break;
                 case 1: // square, but not supported in kicad, so do as circle
-                    res["drillsize"] = [Normalize(Prim.HoleSize), Normalize(Prim.HoleSize)];
+                    res["drillsize"] = [CoordToMMs(Prim.HoleSize).round(), CoordToMMs(Prim.HoleSize).round()];
                     res["drillshape"] = "circle";
                     break;
                 case 2: // slot
-                    res["drillsize"] = [Normalize(Prim.HoleWidth), Normalize(Prim.HoleSize)];
+                    res["drillsize"] = [CoordToMMs(Prim.HoleWidth).round(), CoordToMMs(Prim.HoleSize).round()];
                     res["drillshape"] = "oblong"; 
                     break;
                 default:  //
             }
         }
 
-        res["offset"] =  [Normalize(Prim.XPadOffset(Prim.Layer)), -Normalize(Prim.YPadOffset(Prim.Layer))];
+        res["offset"] =  [CoordToMMs(Prim.XPadOffset(Prim.Layer)).round(), -CoordToMMs(Prim.YPadOffset(Prim.Layer)).round()];
         if (res["offset"][0] == 0 && res["offset"][1] == 0) {
             delete res["offset"];
         }
@@ -394,64 +357,67 @@ function parsePcb(non) {
             viaLayer = eTopLayer;
             layers.push("F");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eTopLayer)), Normalize(Prim.StackSizeOnLayer(eTopLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID != eBottomLayer && Prim.StopLayer.LayerID == eTopLayer) {
             viaLayer = eTopLayer;
             layers.push("F");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eTopLayer)), Normalize(Prim.StackSizeOnLayer(eTopLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID == eTopLayer && Prim.StopLayer.LayerID == eTopLayer) {
             viaLayer = eTopLayer;
             layers.push("F");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eTopLayer)), Normalize(Prim.StackSizeOnLayer(eTopLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eTopLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID == eBottomLayer && Prim.StopLayer.LayerID != eTopLayer) {
             viaLayer = eBottomLayer;
             layers.push("B");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eBottomLayer)), Normalize(Prim.StackSizeOnLayer(eBottomLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID != eTopLayer && Prim.StopLayer.LayerID == eBottomLayer) {
             viaLayer = eBottomLayer;
             layers.push("B");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eBottomLayer)), Normalize(Prim.StackSizeOnLayer(eBottomLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID == eBottomLayer && Prim.StopLayer.LayerID == eBottomLayer) {
             viaLayer = eBottomLayer;
             layers.push("B");
             res["type"] = "smd";
-            res["size"] = [Normalize(Prim.StackSizeOnLayer(eBottomLayer)), Normalize(Prim.StackSizeOnLayer(eBottomLayer))];
+            res["size"] = [CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round(), CoordToMMs(Prim.StackSizeOnLayer(eBottomLayer)).round()];
         } 
         else if (Prim.StartLayer.LayerID == eTopLayer && Prim.StopLayer.LayerID == eBottomLayer) {
             viaLayer = eMultiLayer;
             layers.splice(0, 0, "F", "B");
             res["type"] = "th";
-            res["size"] = [Normalize(Prim.Size), Normalize(Prim.Size)];  
+            res["size"] = [CoordToMMs(Prim.Size).round(), CoordToMMs(Prim.Size).round()];  
         } 
         else if (Prim.StartLayer.LayerID == eBottomLayer && Prim.StopLayer.LayerID == eTopLayer) {
             viaLayer = eMultiLayer;
             layers.splice(0, 0, "F", "B");
             res["type"] = "th";
-            res["size"] = [Normalize(Prim.Size), Normalize(Prim.Size)];  
+            res["size"] = [CoordToMMs(Prim.Size).round(), CoordToMMs(Prim.Size).round()];  
         } else {
             viaLayer = "inner";
         }
 
         res["layers"] = layers;
-        res["pos"] = [Normalize(Prim.x), -Normalize(Prim.y)]; 
-        res["angle"] = -RoundNum(Prim.Rotation);
+        res["pos"] = [CoordToMMs(Prim.x).round(), -CoordToMMs(Prim.y).round()];
+        res["angle"] = 0; 
         
         res["shape"] = "circle";
 
         if (res["type"] == "th") {
-            res["drillsize"] = [Normalize(Prim.HoleSize), Normalize(Prim.HoleSize)];
+            res["drillsize"] = [CoordToMMs(Prim.HoleSize).round(), CoordToMMs(Prim.HoleSize).round()];
             res["drillshape"] = "circle";
         }
 
+        if (Prim.InNet) {
+            // res["net"] = Prim.Net.Name;
+        }
         vias.push(res);
 
         return vias;
@@ -464,9 +430,9 @@ function parsePcb(non) {
         if (Prim.IsKeepout) {
             return res;
         }
-        var angle = RoundNum(Prim.Rotation);
-        var corner1 = [Normalize(Prim.X1Location), Normalize(Prim.Y1Location)];
-        var corner3 = [Normalize(Prim.X2Location), Normalize(Prim.Y2Location)];
+        var angle = Prim.Rotation;
+        var corner1 = [CoordToMMs(Prim.X1Location), CoordToMMs(Prim.Y1Location)];
+        var corner3 = [CoordToMMs(Prim.X2Location), CoordToMMs(Prim.Y2Location)];
         var width = corner3[0] - corner1[0];
         var height = corner3[1] - corner1[1];
         var pos = [corner1[0] + width / 2, corner1[1] + height / 2];
@@ -477,12 +443,15 @@ function parsePcb(non) {
         var tcorner3 = rotatePoint(pos, corner3, angle);
         var tcorner4 = rotatePoint(pos, corner4, angle);
 
-        res["svgpath"] =  ["M", tcorner1[0], -tcorner1[1], "L", tcorner2[0], -tcorner2[1], "L", tcorner3[0], -tcorner3[1], "L", tcorner4[0], -tcorner4[1], "Z"].join(" ");
+        // res["svgpath"] =  ["M", tcorner1[0], -tcorner1[1], "L", tcorner2[0], -tcorner2[1], "L", tcorner3[0], -tcorner3[1], "L", tcorner4[0], -tcorner4[1], "Z"].join(" ");
+        res["svgpath"] =  ["M", tcorner1, "L", tcorner2, "L", tcorner3, "L", tcorner4, "Z"].join(" ");
         res["type"] = "polygon";
-        // res["type"] = "segment";
         res["layer"] = Prim.Layer;
        
-        // res.net = "";
+       if (Prim.InNet) {
+        // res.net = ""; 
+       } else {}
+
         // if (!Prim.IsFreePrimitive) {
         //     res['free'] = false;
         // }
@@ -497,14 +466,14 @@ function parsePcb(non) {
         var holes_svg = [];
         if (Prim.Kind == 0 && !Prim.IsKeepout) {    // Kind "Board Cutout" not done (Tracks on KeepOutLayer can do it).
             for (var i = 1; i <= count; i++) {
-                polygons.push([Normalize(Prim.MainContour.x(i)), Normalize(-Prim.MainContour.y(i))].join(" "));
+                polygons.push([CoordToMMs(Prim.MainContour.x(i)).round(), -CoordToMMs(Prim.MainContour.y(i)).round()].join(" "));
             }      
             
             count = Prim.HoleCount;
             for (var k = 0; k < count; k++) {
                 var hole = [];
                 for (var i = 1; i <= Prim.Holes(k).Count; i++) {
-                    hole.push([Normalize(Prim.Holes(k).x(i)), Normalize(-Prim.Holes(k).y(i))].join(" "));
+                    hole.push([CoordToMMs(Prim.Holes(k).x(i)).round(), -CoordToMMs(Prim.Holes(k).y(i)).round()].join(" "));
                 }
                 holes_svg.push(["M", hole.shift(), "L", hole.join("L"), "Z "].join(""));
             }
@@ -515,7 +484,10 @@ function parsePcb(non) {
         res["type"] = "polygon";
         res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z "].join("") + holes_svg.join(""); 
         res["layer"] = Prim.Layer;
-        // res.net = "";
+        if (Prim.InNet) {
+            // res["net"] = Prim.Net.Name;
+        } else {}
+
         return res;
     }
 
@@ -525,10 +497,10 @@ function parsePcb(non) {
         // var count = Polygon.PointCount; 
         // for (var i = 0; i <= count; i++) {
         //     if (Polygon.Segments(i).Kind == ePolySegmentArc) {
-        //         polygons.push({"x": Normalize(Polygon.Segments(i).cx), "y": Normalize(-Polygon.Segments(i).cy)});
+        //         polygons.push({"x": CoordToMMs(Polygon.Segments(i).cx), "y": CoordToMMs(-Polygon.Segments(i).cy)});
         //     }
         //     else {
-        //         polygons.push({"x": Normalize(Polygon.Segments(i).vx), "y": Normalize(-Polygon.Segments(i).vy)});
+        //         polygons.push({"x": CoordToMMs(Polygon.Segments(i).vx), "y": CoordToMMs(-Polygon.Segments(i).vy)});
         //     }           
         // }   
         var hatched_drawings = [];
@@ -557,7 +529,7 @@ function parsePcb(non) {
             for (var i = 0; i < len; i++) {
                 pathArr.push(hatched_drawings[i].svgpath);
             }
-            hatchedAll2One["width"] = Normalize(Polygon.TrackSize);
+            hatchedAll2One["width"] = CoordToMMs(Polygon.TrackSize).round();
             hatchedAll2One["type"] = "polygon"
             hatchedAll2One["svgpath"] = pathArr.join(" ");
             hatchedAll2One["layer"] = hatched_drawings[0].layer;
@@ -569,12 +541,12 @@ function parsePcb(non) {
     // 95% done
     function parseEdges(pcb) {
         var edges = [];
-        var default_width = Normalize(MilsToCoord(5));
+        var default_width = CoordToMMs(MilsToCoord(5)).round();
         var bbox = {};
-        bbox["minx"] = Normalize(pcb.board.BoardOutline.BoundingRectangle.Left);
-        bbox["miny"] = -Normalize(pcb.board.BoardOutline.BoundingRectangle.Top);
-        bbox["maxx"] = Normalize(pcb.board.BoardOutline.BoundingRectangle.Right);
-        bbox["maxy"] = -Normalize(pcb.board.BoardOutline.BoundingRectangle.Bottom);
+        bbox["minx"] = CoordToMMs(pcb.board.BoardOutline.BoundingRectangle.Left).round();
+        bbox["miny"] = -CoordToMMs(pcb.board.BoardOutline.BoundingRectangle.Top).round();
+        bbox["maxx"] = CoordToMMs(pcb.board.BoardOutline.BoundingRectangle.Right).round();
+        bbox["maxy"] = -CoordToMMs(pcb.board.BoardOutline.BoundingRectangle.Bottom).round();
     
         // boardoutline edges 
         // var k;
@@ -586,18 +558,18 @@ function parsePcb(non) {
         //         if (k == pcb.board.BoardOutline.PointCount) {
         //             k = 0;
         //         }
-        //         edges[i]["start"] = [Normalize(pcb.board.BoardOutline.Segments(i).vx), -Normalize(pcb.board.BoardOutline.Segments(i).vy)];
-        //         edges[i]["end"] = [Normalize(pcb.board.BoardOutline.Segments(k).vx), -Normalize(pcb.board.BoardOutline.Segments(k).vy)];
+        //         edges[i]["start"] = [CoordToMMs(pcb.board.BoardOutline.Segments(i).vx).round(), -CoordToMMs(pcb.board.BoardOutline.Segments(i).vy).round()];
+        //         edges[i]["end"] = [CoordToMMs(pcb.board.BoardOutline.Segments(k).vx).round(), -CoordToMMs(pcb.board.BoardOutline.Segments(k).vy).round()];
         //         edges[i]["type"] = "segment";
         //         edges[i]["width"] = default_width;
         //         edges[i]["layer"] = pcb.Layers.OUTLINE_LAYER;
         //     }
         //     else {
-        //         edges[i]["start"] = [Normalize(pcb.board.BoardOutline.Segments(i).cx), -Normalize(pcb.board.BoardOutline.Segments(i).cy)];
+        //         edges[i]["start"] = [CoordToMMs(pcb.board.BoardOutline.Segments(i).cx).round(), -CoordToMMs(pcb.board.BoardOutline.Segments(i).cy).round()];
         //         edges[i]["startangle"] = -pcb.board.BoardOutline.Segments(i).Angle2;
         //         edges[i]["endangle"] = -pcb.board.BoardOutline.Segments(i).Angle1;
         //         edges[i]["type"] = "arc";
-        //         edges[i]["radius"] = Normalize(pcb.board.BoardOutline.Segments(i).Radius);
+        //         edges[i]["radius"] = CoordToMMs(pcb.board.BoardOutline.Segments(i).Radius).round();
         //         edges[i]["width"] = default_width;
         //         edges[i]["layer"] = pcb.Layers.OUTLINE_LAYER;
         //     }
@@ -606,7 +578,7 @@ function parsePcb(non) {
         var Iter, Prim;
         Iter = pcb.board.BoardIterator_Create;
         Iter.AddFilter_ObjectSet(MkSet(eArcObject, eTrackObject));
-        Iter.AddFilter_LayerSet(MkSet(pcb.Layers.KEEP_OUT_LAYER));
+        Iter.AddFilter_LayerSet(MkSet(pcb.Layers.OUTLINE_LAYER));
         Iter.AddFilter_Method(eProcessAll);
         Prim = Iter.FirstPCBObject;
         while (Prim != null) {
@@ -670,20 +642,20 @@ function parsePcb(non) {
         }
         res["type"] = "text";
         res["text"] = Prim.Text;
-        res["angle"] = RoundNum(Prim.Rotation);
+        res["angle"] = Prim.Rotation.round();
         res["layer"] = Prim.Layer;
 
         var bbox = get_bbox(Prim);
         res["pos"] = bbox["center"];
 
         if (Prim.TextKind == 0) {
-            res["thickness"] = Normalize(Prim.Width);
-            res["height"] = Normalize(Prim.Size);
-            res["width"] = RoundNum(res["height"] * 1); // single char's width in kicad
+            res["thickness"] = CoordToMMs(Prim.Width).round();
+            res["height"] = CoordToMMs(Prim.Size).round();
+            res["width"] = res["height"].round(); // single char's width in kicad
         } else if (Prim.TextKind == 1) {
-            res["height"] = Normalize(Prim.TTFTextHeight * 0.6);
-            res["width"] = Normalize(Prim.TTFTextWidth * 0.9 / len);
-            res["thickness"] = Normalize(res["height"] * 0.1);
+            res["height"] = CoordToMMs(Prim.TTFTextHeight * 0.6).round();
+            res["width"] = CoordToMMs(Prim.TTFTextWidth * 0.9 / len).round();
+            res["thickness"] = CoordToMMs(res["height"] * 0.1).round();
         }
 
         // res["horiz_justify"] = 0; // center align, tag 2.3
@@ -706,14 +678,12 @@ function parsePcb(non) {
         var oFootprint = {};
         var oComponent = {};
         var pads = [];
-        var bbox = {};
 
         var Iter, Prim;
         var isSMD = true;
         Iter = Component.GroupIterator_Create;
         Iter.AddFilter_ObjectSet(MkSet(ePadObject));
-        // Iter.AddFilter_LayerSet(AllLayers);
-        // Iter.AddFilter_Method(eProcessAll);
+        Iter.AddFilter_LayerSet(AllLayers);
         Prim = Iter.FirstPCBObject;
         while (Prim != null) {
             pads = pads.concat(parsePad(Prim));
@@ -728,7 +698,6 @@ function parsePcb(non) {
         Iter = Component.GroupIterator_Create;
         Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, eFillobject, eRegionObject));
         Iter.AddFilter_LayerSet(MkSet(eTopLayer, eBottomLayer));
-        // Iter.AddFilter_Method(eProcessAll);
         Prim = Iter.FirstPCBObject;
         while (Prim != null) {
             if (Prim.Layer == eTopLayer) {
@@ -782,21 +751,24 @@ function parsePcb(non) {
             oFootprint["layer"] = "B";
         }
 
+        res["footprint"] = oFootprint;
+
         oComponent["ref"] = oFootprint.ref;
         oComponent["val"] = Component.Comment.Text;
         oComponent["footprint"] = Component.Pattern;
         oComponent["layer"] = oFootprint["layer"];
         oComponent["attr"] = null;
 
-        res["angle"] = RoundNum(Component.Rotation);
+        res["angle"] = Component.Rotation.round();
         res["itemkey"] = ["k", oComponent["ref"].slice(0, 1), oComponent["footprint"], oComponent["val"]].join("");
+        
         if (isSMD) {
             res["soldertype"] = "smd";
         }
         else {
             res["soldertype"] = "th";
         }
-        res["footprint"] = oFootprint;
+
         res["component"] = oComponent;
 
         return res;
@@ -818,6 +790,10 @@ function parsePcb(non) {
     }
 
     // parse_board
+    if (PCBServer == null) {
+        showmessage("Please open a PCB document");
+        return false;
+    }
     PCBServer.PreProcess;
     var board = PCBServer.GetCurrentPCBBoard();
     if (board == null) {
@@ -832,8 +808,8 @@ function parsePcb(non) {
 
     parseEdges(pcb);
 
-    pcb.pos.push(Normalize(board.XOrigin));
-    pcb.pos.push(Normalize(board.YOrigin));
+    pcb.pos.push(CoordToMMs(board.XOrigin).round());
+    pcb.pos.push(CoordToMMs(board.YOrigin).round());
 
     var Iter, Prim; 
     Iter = pcb.board.BoardIterator_Create;
@@ -878,7 +854,9 @@ function parsePcb(non) {
         Prim = Iter.NextPCBObject;
     }
     pcb.board.BoardIterator_Destroy(Iter);
+
     pcb.modules = sortModules(pcb.modules);
+
     var kk = pcb.modules.length;
     pcb.pcbdata["footprints"] = [];
     for (var n = 0; n < kk; n++) {
@@ -918,11 +896,15 @@ function parsePcb(non) {
 
     drawings = drawings.concat(pcb.texts, pcb.tracks, pcb.arcs, pcb.fills, pcb.regions);
     pcb.pcbdata["silkscreen"] = parseDrawingsOnLayers(drawings, pcb.Layers.TOP_OVERLAY_LAYER, pcb.Layers.BOT_OVERLAY_LAYER);
-    pcb.pcbdata["fabrication"] = parseDrawingsOnLayers(drawings, pcb.Layers.TOP_DIMENSIONS_LAYER, pcb.Layers.BOT_DIMENSIONS_LAYER);
+    // pcb.pcbdata["fabrication"] = parseDrawingsOnLayers(drawings, pcb.Layers.TOP_DIMENSIONS_LAYER, pcb.Layers.BOT_DIMENSIONS_LAYER);
+    pcb.pcbdata["fabrication"] = {
+        "F": [],
+        "B": []
+    };
     
     // rough handling tracks and zones, not done
     Iter = pcb.board.BoardIterator_Create;
-    var objset = [];
+
     if (config.include.tracks && !config.include.polys) {
         Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject));
     } else if (config.include.polys && !config.include.tracks) {
@@ -1009,8 +991,8 @@ function parsePcb(non) {
                 }
                 else {
                     line.push([
-                        RoundNum((coord.charCodeAt(0) - "R".charCodeAt(0)) * STROKE_FONT_SCALE - glyph_x),
-                        RoundNum((coord.charCodeAt(1) - "R".charCodeAt(0) + FONT_OFFSET) * STROKE_FONT_SCALE)
+                        ((coord.charCodeAt(0) - "R".charCodeAt(0)) * STROKE_FONT_SCALE - glyph_x).round(),
+                        ((coord.charCodeAt(1) - "R".charCodeAt(0) + FONT_OFFSET) * STROKE_FONT_SCALE).round()
                         ])
                 }
             }
@@ -1019,7 +1001,7 @@ function parsePcb(non) {
                 lines.push(line);
             }
             return {
-                "w": RoundNum(glyph_width),
+                "w": glyph_width.round(),
                 "l": lines
             }
         }
@@ -1047,4 +1029,4 @@ function parsePcb(non) {
     return pcb;
 } 
 // var t0 = new Date().getTime();
-var pcb = parsePcb();
+// var pcb = parsePcb();

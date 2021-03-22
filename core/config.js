@@ -20,6 +20,7 @@ function getConfig(non) {
 	config["include"] = {
 		"tracks": false, // not support arc for now, so parse one arc to a few tracks. slow.
 		"vias": false,  // so many objects in pcbdata slow down the speed of generating bom.
+		"nets": false,
 		"polys": false, 
 		"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
 	};

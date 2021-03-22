@@ -2,7 +2,7 @@
 ///
 function exportJSON() {  // export json of pcb without attr "bom" & "ibom_version"
     var res = {};
-    
+    var pcb = parsePcb();
     if (!pcb) {
         return;
     };
@@ -32,6 +32,7 @@ function exportJSON() {  // export json of pcb without attr "bom" & "ibom_versio
 
 
 function exportBOM() {
+    var pcb = parsePcb();
     if (!pcb) {
         return;
     };
@@ -52,7 +53,7 @@ function exportBOM() {
                 rowsDNP[modules[i].itemkey][6].push(modules[i]["component"].ref);
             }
 
-              if (modules[i]["component"].layer == "F") {
+            if (modules[i]["component"].layer == "F") {
                 rowsDNP[modules[i].itemkey][8].push(modules[i]["component"].ref);
             } else {
                 rowsDNP[modules[i].itemkey][9].push(modules[i]["component"].ref);
@@ -67,7 +68,7 @@ function exportBOM() {
             rows[modules[i].itemkey][6].push(modules[i]["component"].ref);
         }
 
-        if (modules[i].layer == "F") {
+        if (modules[i]["component"].layer == "F") {
             rows[modules[i].itemkey][8].push(modules[i]["component"].ref);
         } else {
             rows[modules[i].itemkey][9].push(modules[i]["component"].ref);
@@ -98,6 +99,7 @@ function exportBOM() {
 }
 
 function exportPnP() {
+    var pcb = parsePcb();
     if (!pcb) {
         return;
     };

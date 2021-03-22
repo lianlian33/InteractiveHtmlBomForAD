@@ -224,12 +224,20 @@ function save2file(src, filename, noBOM) {
     var arrFolder = filename.split("\\");
     var len = arrFolder.length - 1;
     var folder = "";
+    if (arrFolder[len] == "") {
+        showmessage("path error");
+        return;
+    }
     for (var i = 0; i < len; i++) {
-         folder = folder + arrFolder[i];
-         if (!fso.FolderExists(folder)) {
+        if (arrFolder[i] == "") {
+            showmessage("path error");
+            return;
+        }
+        folder = folder + arrFolder[i];
+        if (!fso.FolderExists(folder)) {
             fso.CreateFolder(folder);
-         }
-         folder = folder + "\\"; 
+        }
+        folder = folder + "\\"; 
     }
     // var folder = ExtractFilePath(filename);
     // if (!fso.FolderExists(folder)) {
@@ -344,6 +352,7 @@ function loadExtraData(filename) {
 
 
 function main() {
+    var pcb = parsePcb();
     if (!pcb) {
         return;
     };
