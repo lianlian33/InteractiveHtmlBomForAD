@@ -6,60 +6,145 @@ function startWin() {
 function mainWinShow(Sender) {
     var iniFileName = CURRENT_PATH + "config.ini";
 
-    if (PCBServer != null) {
-        PCBServer.PreProcess;
-        var currentPcb = PCBServer.GetCurrentPCBBoard();
+    if (FileExists(iniFileName)) {
+        var iniFile = TIniFile.Create(iniFileName);
+        if (PCBServer != null) {
+            PCBServer.PreProcess;
+            var currentPcb = PCBServer.GetCurrentPCBBoard();
 
-        if (currentPcb != null) {
-            var currentPath = ExtractFilePath(currentPcb.FileName);
-            var filename = currentPath + "PnPout\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + ".html";
-            TEditCurrentPcbPath.Text = filename;
-            TEditExtraFileName.Text = currentPath;
+            if (currentPcb != null) {
+                var currentPath = ExtractFilePath(currentPcb.FileName);
+                var filename = currentPath + "PnPout\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + ".html";
+                TEditCurrentPcbPath.Text = filename;
+                TEditExtraFileName.Text = currentPath;
+            } else {
+                TEditCurrentPcbPath.Text = iniFile.ReadString("General", "Directory", "");
+                TEditExtraFileName.Text = iniFile.ReadString("ExtraFields", "ExtraFileName", "");
+            }
+
+            PCBServer.PostProcess;
         } else {
-            TEditCurrentPcbPath.Text = getValueFromInifile(iniFileName, "General", "Directory", "");
-            TEditExtraFileName.Text = getValueFromInifile(iniFileName, "ExtraFields", "ExtraFileName", "");
+            TEditCurrentPcbPath.Text = iniFile.ReadString("General", "Directory", "");
+            TEditExtraFileName.Text = iniFile.ReadString("ExtraFields", "ExtraFileName", "");
+        }
+        CbIncludeTracksAndSolidPolygons.Checked = iniFile.ReadBool("General", "IncludeTracksAndSolidPolygons", false);
+        CbIncludeVias.Checked = iniFile.ReadBool("General", "IncludeVias", false);
+        // CbIncludeHatched.Checked = iniFile.ReadBool("General", "IncludeHatched", false);
+        // CbIncludeNets.Checked = iniFile.ReadBool("General", "IncludeNets", false);
+        CbIncludeHatched.Checked = false;
+        CbIncludeNets.Checked = false;
+
+        CbBlacklistEmpty.Checked = iniFile.ReadBool("General", "BlacklistEmpty", true);
+        CbBlacklist1Pad.Checked = iniFile.ReadBool("General", "Blacklist1Pad", true);
+        CbBlacklistTh.Checked = iniFile.ReadBool("General", "BlacklistTh", true);
+        if (iniFile.ReadBool("General", "PcbOutlineMech1", false)) {
+            RBtnMech1.Checked = true;
+            RBtnKeepOutLayer.Checked = false;
+        } else {
+            RBtnMech1.Checked = false;
+            RBtnKeepOutLayer.Checked = true;
         }
 
-        PCBServer.PostProcess;
+        CbDarkMode.Checked = iniFile.ReadBool("HtmlDefaults", "DarkMode", false);
+        CbShowFootprintPads.Checked = iniFile.ReadBool("HtmlDefaults", "ShowFootprintPads", true);
+        CbShowFabricationLayer.Checked = iniFile.ReadBool("HtmlDefaults", "ShowFabricationLayer", false);
+        CbShowSilkscreen.Checked = iniFile.ReadBool("HtmlDefaults", "ShowSilkscreen", true);
+        CbHighlightFirstPin.Checked = iniFile.ReadBool("HtmlDefaults", "HighlightPin1", false);
+        CbContinuousRedrawOnDrag.Checked = iniFile.ReadBool("HtmlDefaults", "ContinuousRedrawOnDrag", true);
+
+        TTrackBarRotation.Position = (iniFile.ReadInteger("HtmlDefaults", "PcbRotation", 0) + 180)/5;
+        TTextRotation.Caption = [TTrackBarRotation.Position * 5 - 180, String.fromCharCode(176)].join("");
+
+        TEditHtmlCheckboxes.Text = iniFile.ReadString("HtmlDefaults", "HtmlCheckboxes", "Sourced,Placed");
+        RBtnBomOnly.Checked = iniFile.ReadBool("HtmlDefaults", "BomViewOnly", false);
+        RBtnBomLeftDrawingRight.Checked = iniFile.ReadBool("HtmlDefaults", "BomViewLeftDrawingRight", true);
+        RBtnBomTopDrawingBottom.Checked = iniFile.ReadBool("HtmlDefaults", "BomViewTopDrawingBottom", false);
+        RBtnFrontOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontOnly", false);
+        RBtnFrontAndBack.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontAndBack", true);
+        RBtnBackOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerBackOnly", false);
+        // CbOpenBrowser.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenBrowser", false);
+        CbOpenBrowser.Checked = false;
+        CbOpenExplorer.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenExplorer", true);
+
+        iniFile.Free;
     } else {
-        TEditCurrentPcbPath.Text = getValueFromInifile(iniFileName, "General", "Directory", "");
-        TEditExtraFileName.Text = getValueFromInifile(iniFileName, "ExtraFields", "ExtraFileName", "");
+        if (PCBServer != null) {
+            PCBServer.PreProcess;
+            var currentPcb = PCBServer.GetCurrentPCBBoard();
+
+            if (currentPcb != null) {
+                var currentPath = ExtractFilePath(currentPcb.FileName);
+                var filename = currentPath + "PnPout\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + ".html";
+                TEditCurrentPcbPath.Text = filename;
+                TEditExtraFileName.Text = currentPath;
+            } else {
+                TEditCurrentPcbPath.Text = "";
+                TEditExtraFileName.Text = "";
+            }
+
+            PCBServer.PostProcess;
+        } else {
+            TEditCurrentPcbPath.Text = "";
+            TEditExtraFileName.Text = "";
+        }
+
+        CbBlacklistEmpty.Checked = true;
+        CbBlacklist1Pad.Checked = true;
+        CbBlacklistTh.Checked = true;
+
+        CbIncludeTracksAndSolidPolygons.Checked = false;
+        CbIncludeVias.Checked = false;
+        CbIncludeHatched.Checked = false;
+        CbIncludeNets.Checked = false;
+
+        CbBlacklistEmpty.Checked = true;
+        CbBlacklist1Pad.Checked = true;
+        RBtnKeepOutLayer.Checked = true;
+        RBtnMech1.Checked = false;
+
+        CbDarkMode.Checked = false;
+        CbShowFootprintPads.Checked = true;
+        CbShowFabricationLayer.Checked = false;
+        CbShowSilkscreen.Checked = true;
+        CbHighlightFirstPin.Checked = false;
+        CbContinuousRedrawOnDrag.Checked = true;
+
+        TTrackBarRotation.Position = 36;
+        TTextRotation.Caption = [0, String.fromCharCode(176)].join("");
+
+        TEditHtmlCheckboxes.Text = "Sourced,Placed";
+        RBtnBomOnly.Checked = false;
+        RBtnBomLeftDrawingRight.Checked = true;
+        RBtnBomTopDrawingBottom.Checked = false;
+        RBtnFrontOnly.Checked = false;
+        RBtnFrontAndBack.Checked = true;
+        RBtnBackOnly.Checked = false;
+        CbOpenBrowser.Checked = false;
+        CbOpenExplorer.Checked = true;
     }
-
-    CbIncludeTracksAndSolidPolygons.Checked = getValueFromInifile(iniFileName, "General", "IncludeTracksAndSolidPolygons", false);
-    CbIncludeVias.Checked = getValueFromInifile(iniFileName, "General", "IncludeVias", false);
-    CbIncludeHatched.Checked = getValueFromInifile(iniFileName, "General", "IncludeHatched", false);
-    CbIncludeNets.Checked = getValueFromInifile(iniFileName, "General", "IncludeNets", false);
-
-    CbBlacklistDNP.Checked = getValueFromInifile(iniFileName, "General", "BlacklistDNP", true);
-    CbBlacklist1Pad.Checked = getValueFromInifile(iniFileName, "General", "Blacklist1Pad", true);
-
-    CbDarkMode.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "DarkMode", false);
-    CbShowFootprintPads.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "ShowFootprintPads", true);
-    CbShowFabricationLayer.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "ShowFabricationLayer", false);
-    CbShowSilkscreen.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "ShowSilkscreen", true);
-    CbHighlightFirstPin.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "HighlightFirstPin", false);
-    CbContinuousRedrawOnDrag.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "ContinuousRedrawOnDrag", true);
-
-    TTrackBarRotation.Position = getValueFromInifile(iniFileName,"HtmlDefaults", "PcbRotation", 36);
-    TTextRotation.Caption = [TTrackBarRotation.Position * 5 - 180, String.fromCharCode(176)].join("");
-
-    TEditHtmlCheckboxes.Text = getValueFromInifile(iniFileName, "HtmlDefaults", "HtmlCheckboxes", "Sourced,Placed");
-    RBtnBomOnly.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "BomViewOnly", false);
-    RBtnBomLeftDrawingRight.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "BomViewLeftDrawingRight", true);
-    RBtnBomTopDrawingBottom.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "BomViewTopDrawingBottom", false);
-    RBtnFrontOnly.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "PcbLayerFrontOnly", false);
-    RBtnFrontAndBack.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "PcbLayerFrontAndBack", true);
-    RBtnBackOnly.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "PcbLayerBackOnly", false);
-    CbOpenBrowser.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "OtherOpenBrowser", false);
-    CbOpenExplorer.Checked = getValueFromInifile(iniFileName, "HtmlDefaults", "OtherOpenExplorer", true);
 }
 
 function GenerateBomClick(Sender) {
     var iniFileName = CURRENT_PATH + "config.ini";
     setValueToInifile(iniFileName);
 
+    // var config = getConfig();
+    var config = {};
+    config.include = {};
+    config.htmlConfig = {};
+    config.bomFilter = {};
+    config.bomFilter["skipempty"] = CbBlacklistEmpty.Checked;
+    config.bomFilter["skiponepad"] = CbBlacklist1Pad.Checked;
+    config.bomFilter["skipth"] = CbBlacklistTh.Checked;
+
+    config.htmlConfig["extra_fields"] = []; 
     config.htmlConfig["redraw_on_drag"] = CbContinuousRedrawOnDrag.Checked;
+
+    if (RBtnMech1.Checked) {
+        config.PcbOutlineMech1 = true;
+    } else {
+        config.PcbOutlineMech1 = false;
+    }
     
     if (RBtnBomOnly.Checked) {
         config.htmlConfig["bom_view"] = "bom-only";
@@ -67,7 +152,7 @@ function GenerateBomClick(Sender) {
         config.htmlConfig["bom_view"] = "left-right";
     } else if (RBtnBomTopDrawingBottom.Checked) {
         config.htmlConfig["bom_view"] = "top-bottom";
-    } 
+    }
 
     if (RBtnFrontOnly.Checked) {
         config.htmlConfig["layer_view"] = "F";
@@ -97,7 +182,7 @@ function GenerateBomClick(Sender) {
         return;
     }
 
-    var pcb = parsePcb();
+    var pcb = parsePcb(config);
     if (!pcb) {
         return;
     };
@@ -139,7 +224,7 @@ function pickBom(pcb, config, extra_data) {
     var skippedComponents = [];
     var count = modules.length;
     for (var i = 0; i < count; i++) {
-        if (skipComponent(modules[i])) {
+        if (skipComponent(modules[i], config)) {
             skippedComponents.push(i);
             continue;
         }
@@ -153,9 +238,9 @@ function pickBom(pcb, config, extra_data) {
         //         },
         //       ref2: ...
         //    }
-        if (!rows.hasOwnProperty(modules[i].itemkey)) {
+        if (!Object.prototype.hasOwnProperty.call(rows, modules[i].itemkey)) {
 
-            if (extra_data.hasOwnProperty(modules[i]["component"].ref)) {
+            if (Object.prototype.hasOwnProperty.call(extra_data, modules[i]["component"].ref)) {
                 for (var field_name in extra_data[modules[i]["component"].ref]) {
                     extras.push(extra_data[modules[i]["component"].ref][field_name]);  // extras = [field_value1, field_value2 ...]    
                 }   
@@ -173,14 +258,14 @@ function pickBom(pcb, config, extra_data) {
         }
 
         if (modules[i]["component"].layer == "F") {
-            if (!rowsF.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsF, modules[i].itemkey)) {
                 rowsF[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]] ];
             } else {
                 rowsF[modules[i].itemkey][0]++;
                 rowsF[modules[i].itemkey][3].push([modules[i]["component"].ref, i]);    
             }
         } else {
-            if (!rowsB.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsB, modules[i].itemkey)) {
                 rowsB[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]] ];
             } else {
                 rowsB[modules[i].itemkey][0]++;
@@ -229,55 +314,38 @@ function TTrackBarRotationChange(Sender) {
     TTextRotation.Caption = [TTrackBarRotation.Position * 5 - 180, String.fromCharCode(176)].join("");
 }
 
-function getValueFromInifile(iniFileName, section, key, defaultValue) {
-    var IniFile, res;
-    var res = defaultValue;
-    if (FileExists(iniFileName)) {
-        try {
-            IniFile = TIniFile.Create(iniFileName);
-            res = IniFile.ReadString(section, key, defaultValue);   
-        }
-        catch (err) {
-            ShowMessage("read .ini error");
-        }
-        finally {
-            return res;
-            Inifile.Free;
-        }
-    } else {
-        return defaultValue;
-    }
-}
 
 function setValueToInifile(iniFileName) {
-    var IniFile = TIniFile.Create(iniFileName);
-    IniFile.WriteString("General", "Directory", TEditCurrentPcbPath.Text);
-    IniFile.WriteBool("General", "IncludeTracksAndSolidPolygons", CbIncludeTracksAndSolidPolygons.Checked);
-    IniFile.WriteBool("General", "IncludeVias", CbIncludeVias.Checked);
-    IniFile.WriteBool("General", "IncludeHatched", CbIncludeHatched.Checked);
-    IniFile.WriteBool("General", "IncludeNets", CbIncludeNets.Checked);
-    IniFile.WriteBool("General", "BlacklistDNP", CbBlacklistDNP.Checked);
-    IniFile.WriteBool("General", "Blacklist1Pad", CbBlacklist1Pad.Checked);
+    var iniFile = TIniFile.Create(iniFileName);
+    iniFile.WriteString("General", "Directory", TEditCurrentPcbPath.Text);
+    iniFile.WriteBool("General", "IncludeTracksAndSolidPolygons", CbIncludeTracksAndSolidPolygons.Checked);
+    iniFile.WriteBool("General", "IncludeVias", CbIncludeVias.Checked);
+    iniFile.WriteBool("General", "IncludeHatched", CbIncludeHatched.Checked);
+    iniFile.WriteBool("General", "IncludeNets", CbIncludeNets.Checked);
+    iniFile.WriteBool("General", "BlacklistEmpty", CbBlacklistEmpty.Checked);
+    iniFile.WriteBool("General", "Blacklist1Pad", CbBlacklist1Pad.Checked);
+    iniFile.WriteBool("General", "BlacklistTh", CbBlacklistTh.Checked);
+    iniFile.WriteBool("General", "PcbOutlineMech1", RBtnMech1.Checked);
 
-    IniFile.WriteBool("HtmlDefaults", "DarkMode", CbDarkMode.Checked);
-    IniFile.WriteBool("HtmlDefaults", "ShowFootprintPads", CbShowFootprintPads.Checked);
-    IniFile.WriteBool("HtmlDefaults", "ShowFabricationLayer", CbShowFabricationLayer.Checked);
-    IniFile.WriteBool("HtmlDefaults", "ShowSilkscreen", CbShowSilkscreen.Checked);
-    IniFile.WriteBool("HtmlDefaults", "HighlightFirstPin", CbHighlightFirstPin.Checked);
-    IniFile.WriteBool("HtmlDefaults", "ContinuousRedrawOnDrag", CbContinuousRedrawOnDrag.Checked);
-    IniFile.WriteInteger("HtmlDefaults", "PcbRotation", TTrackBarRotation.Position);
-    IniFile.WriteString("HtmlDefaults", "HtmlCheckboxes", TEditHtmlCheckboxes.Text);
-    IniFile.WriteBool("HtmlDefaults", "BomViewOnly", RBtnBomOnly.Checked);
-    IniFile.WriteBool("HtmlDefaults", "BomViewLeftDrawingRight", RBtnBomLeftDrawingRight.Checked);
-    IniFile.WriteBool("HtmlDefaults", "BomViewTopDrawingBottom", RBtnBomTopDrawingBottom.Checked);
-    IniFile.WriteBool("HtmlDefaults", "PcbLayerFrontOnly", RBtnFrontOnly.Checked);
-    IniFile.WriteBool("HtmlDefaults", "PcbLayerFrontAndBack", RBtnFrontAndBack.Checked);
-    IniFile.WriteBool("HtmlDefaults", "PcbLayerBackOnly", RBtnBackOnly.Checked);
-    IniFile.WriteBool("HtmlDefaults", "OtherOpenBrowser", CbOpenBrowser.Checked);
-    IniFile.WriteBool("HtmlDefaults", "OtherOpenExplorer", CbOpenExplorer.Checked);
+    iniFile.WriteBool("HtmlDefaults", "DarkMode", CbDarkMode.Checked);
+    iniFile.WriteBool("HtmlDefaults", "ShowFootprintPads", CbShowFootprintPads.Checked);
+    iniFile.WriteBool("HtmlDefaults", "ShowFabricationLayer", CbShowFabricationLayer.Checked);
+    iniFile.WriteBool("HtmlDefaults", "ShowSilkscreen", CbShowSilkscreen.Checked);
+    iniFile.WriteBool("HtmlDefaults", "HighlightPin1", CbHighlightFirstPin.Checked);
+    iniFile.WriteBool("HtmlDefaults", "ContinuousRedrawOnDrag", CbContinuousRedrawOnDrag.Checked);
+    iniFile.WriteInteger("HtmlDefaults", "PcbRotation", (TTrackBarRotation.Position * 5 - 180));
+    iniFile.WriteString("HtmlDefaults", "HtmlCheckboxes", TEditHtmlCheckboxes.Text);
+    iniFile.WriteBool("HtmlDefaults", "BomViewOnly", RBtnBomOnly.Checked);
+    iniFile.WriteBool("HtmlDefaults", "BomViewLeftDrawingRight", RBtnBomLeftDrawingRight.Checked);
+    iniFile.WriteBool("HtmlDefaults", "BomViewTopDrawingBottom", RBtnBomTopDrawingBottom.Checked);
+    iniFile.WriteBool("HtmlDefaults", "PcbLayerFrontOnly", RBtnFrontOnly.Checked);
+    iniFile.WriteBool("HtmlDefaults", "PcbLayerFrontAndBack", RBtnFrontAndBack.Checked);
+    iniFile.WriteBool("HtmlDefaults", "PcbLayerBackOnly", RBtnBackOnly.Checked);
+    iniFile.WriteBool("HtmlDefaults", "OtherOpenBrowser", CbOpenBrowser.Checked);
+    iniFile.WriteBool("HtmlDefaults", "OtherOpenExplorer", CbOpenExplorer.Checked);
 
-    IniFile.WriteString("ExtraFields", "ExtraFileName", TEditExtraFileName.Text);
-    IniFile.Free;
+    iniFile.WriteString("ExtraFields", "ExtraFileName", TEditExtraFileName.Text);
+    iniFile.Free;
 }
 
 function getSaveDir(text) {
@@ -300,5 +368,4 @@ function getSaveDir(text) {
 
     return filename;
 }
-
 

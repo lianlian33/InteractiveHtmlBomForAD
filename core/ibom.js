@@ -11,44 +11,45 @@ module = {
 }
 */
 function skipComponent(m, config, extra_data) {
-    config = config || {};
-    config.skiplist = [];
-    config.skipempty = true;
-    config.skiponepad = true;
-    config.skipvirtual = true;
-    extra_data = extra_data || {};
-    var re = /^[A-Z]*/g;
-    var ref_prefix = re.exec(m["component"].ref);
-    if (m["component"].ref in config.skiplist) {
-        return true;
-    }
-    if (ref_prefix + "*" in config.skiplist) {
-        return true;
-    } 
+    // config = config || {};
+    // config.bomFilter.skiplist = [];
+    // config.bomFilter.skipvirtual = true;
+    // config.bomFilter.dnpfield = true;
+    // config.bomFilter.skiplayer = true;
+
+    // extra_data = extra_data || {};
+    // var re = /^[A-Z]*/g;
+    // var ref_prefix = re.exec(m["component"].ref);
+    // if (m["component"].ref in config.bomFilter.skiplist) {
+    //     return true;
+    // }
+    // if (ref_prefix + "*" in config.bomFilter.skiplist) {
+    //     return true;
+    // } 
     // skip component with empty comment
-    if (config.skipempty && m["component"].val in {"DNP": 1, "": 2, "~": 3}) {
+    if (config.bomFilter.skipempty && m["component"].val in {"DNP": 1, "": 2, "~": 3}) {
         return true;
     }
     // skip virtual components
-    if (config.skipvirtual && m["component"].attr == "virtual") {
-        return true;
-    }
+    // if (config.bomFilter.skipvirtual && m["component"].attr == "virtual") {
+    //     return true;
+    // }
     // skip components with one pad
-    if (config.skiponepad && m["footprint"].pads.length <= 1) {
+    if (config.bomFilter.skiponepad && m["footprint"].pads.length <= 1) {
         return true;
     }
     // skip components with dnp field not empty
-    if (config.dnpfield && extra_data[m["component"].ref][config.dnpfield]) {
-        return true;
-    }
+    // if (config.bomFilter.dnpfield && extra_data[m["component"].ref][config.dnpfield]) {
+    //     return true;
+    // }
     // skip th components
-    if (config.skipth && m.soldertype == "th") {
+    if (config.bomFilter.skipth && m.soldertype == "th") {
         return true;
     }
     // skip components on layer, "F" or "B"
-    if (config.skiplayer == m["component"].layer) {
-        return true;
-    }
+    // if (config.bomFilter.skiplayer == m["component"].layer) {
+    //     return true;
+    // }
 }
 
 
@@ -145,7 +146,7 @@ function generateBom(pcb, config, extra_data) {
     var skippedComponents = [];
     var count = modules.length;
     for (var i = 0; i < count; i++) {
-        if (skipComponent(modules[i])) {
+        if (skipComponent(modules[i], config)) {
             skippedComponents.push(i);
             continue;
         }
@@ -159,9 +160,9 @@ function generateBom(pcb, config, extra_data) {
         //         },
         //       ref2: ...
         //    }
-        if (!rows.hasOwnProperty(modules[i].itemkey)) {
+        if (!Object.prototype.hasOwnProperty.call(rows, modules[i].itemkey)) {
 
-            if (extra_data.hasOwnProperty(modules[i]["component"].ref)) {
+            if (Object.prototype.hasOwnProperty.call(extra_data, modules[i]["component"].ref)) {
                 for (var field_name in extra_data[modules[i]["component"].ref]) {
                     extras.push(extra_data[modules[i]["component"].ref][field_name]);  // extras = [field_value1, field_value2 ...]    
                 }   
@@ -179,14 +180,14 @@ function generateBom(pcb, config, extra_data) {
         }
 
         if (modules[i]["component"].layer == "F") {
-            if (!rowsF.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsF, modules[i].itemkey)) {
                 rowsF[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]] ];
             } else {
                 rowsF[modules[i].itemkey][0]++;
                 rowsF[modules[i].itemkey][3].push([modules[i]["component"].ref, i]);    
             }
         } else {
-            if (!rowsB.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsB, modules[i].itemkey)) {
                 rowsB[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]] ];
             } else {
                 rowsB[modules[i].itemkey][0]++;
@@ -352,7 +353,8 @@ function loadExtraData(filename) {
 
 
 function main() {
-    var pcb = parsePcb();
+    var config = getConfig();
+    var pcb = parsePcb(config);
     if (!pcb) {
         return;
     };

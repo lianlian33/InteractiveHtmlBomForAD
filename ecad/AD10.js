@@ -76,7 +76,7 @@ function get_bbox(Prim) {
 }
 
 /// 
-function parsePcb(non) {
+function parsePcb(config) {
     //"use strict";
     var pcb = {}; 
     pcb["pcbdata"] = {};
@@ -93,8 +93,12 @@ function parsePcb(non) {
     pcb["pos"] = [];
 
     pcb["Layers"] = {};
-    pcb.Layers.OUTLINE_LAYER = String2Layer("Keep Out Layer");
-    // pcb.Layers.OUTLINE_LAYER = eMechanical1;
+    
+    if (config.PcbOutlineMech1) {
+        pcb.Layers.OUTLINE_LAYER = eMechanical1;
+    } else {
+        pcb.Layers.OUTLINE_LAYER = String2Layer("Keep Out Layer");
+    }
     
     pcb.Layers.INFO_LAYER = eMechanical2;
     pcb.Layers.TOP_DIMENSIONS_LAYER = eMechanical11;
@@ -962,67 +966,11 @@ function parsePcb(non) {
         pcb.pcbdata["zones"] = parseDrawingsOnLayers(draws.polygons, eTopLayer, eBottomLayer);  
     }
 
-    function parseFontStr(s) {
-        pcb.pcbdata["font_data"] = {};
-        var STROKE_FONT_SCALE = 1 / 21;
-        var FONT_OFFSET = -10;
-        var NEWSTROKE_FONT = get_newstroke_font();
-        function parseFontChar(c) {
-            var lines = [];
-            var glyph_x = 0;
-            var glyph_width;
-            var line = [];
-            var index = c.charCodeAt(0) - " ".charCodeAt(0);
-            if (index >= NEWSTROKE_FONT.length) {
-                index = "?".charCodeAt(0) - " ".charCodeAt(0);
-            }
-
-            var glyph_str = NEWSTROKE_FONT[index];
-            var coord;
-            var len = glyph_str.length;
-            for (var i = 0; i < len; i += 2) {
-                coord = glyph_str.slice(i, i + 2);
-                if (i < 2) {
-                    glyph_x = (coord.charCodeAt(0) - "R".charCodeAt(0)) * STROKE_FONT_SCALE;
-                    glyph_width = (coord.charCodeAt(1) - coord.charCodeAt(0)) * STROKE_FONT_SCALE;
-                } else if (coord.slice(0, 1) == " " && coord.slice(1, 2) == "R") {
-                    lines.push(line);
-                    line = [];
-                }
-                else {
-                    line.push([
-                        ((coord.charCodeAt(0) - "R".charCodeAt(0)) * STROKE_FONT_SCALE - glyph_x).round(),
-                        ((coord.charCodeAt(1) - "R".charCodeAt(0) + FONT_OFFSET) * STROKE_FONT_SCALE).round()
-                        ])
-                }
-            }
-
-            if (line.length > 0) {
-                lines.push(line);
-            }
-            return {
-                "w": glyph_width.round(),
-                "l": lines
-            }
-        }
-
-        var chrArr = s.split("");
-        for (var i = chrArr.length - 1; i >= 0; i--) {
-            if (chrArr[i] == "\t" && !pcb.pcbdata.font_data.hasOwnProperty(chrArr[i])) {
-                pcb.pcbdata.font_data[" "] = parseFontChar(" ");
-            } 
-            
-            if (!pcb.pcbdata.font_data.hasOwnProperty(chrArr[i]) && chrArr[i].charCodeAt(0) >= " ".charCodeAt(0)) {
-                pcb.pcbdata.font_data[chrArr[i]] = parseFontChar(chrArr[i]);
-            } 
-        }
-    }
-
     var str_text = [];
     for (var i = pcb.texts.length - 1; i >= 0; i--) {
         str_text.push(pcb.texts[i].text);
     }
-    parseFontStr(str_text.join(""));
+    pcb.pcbdata.font_data = parseTextToNewStrokeFont(str_text.join(""));
 
     PCBServer.PostProcess;
 

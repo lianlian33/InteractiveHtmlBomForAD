@@ -2,7 +2,8 @@
 ///
 function exportJSON() {  // export json of pcb without attr "bom" & "ibom_version"
     var res = {};
-    var pcb = parsePcb();
+    var config = getConfig();
+    var pcb = parsePcb(config);
     if (!pcb) {
         return;
     };
@@ -32,7 +33,8 @@ function exportJSON() {  // export json of pcb without attr "bom" & "ibom_versio
 
 
 function exportBOM() {
-    var pcb = parsePcb();
+    var config = getConfig();
+    var pcb = parsePcb(config);
     if (!pcb) {
         return;
     };
@@ -41,12 +43,12 @@ function exportBOM() {
     var rows = {};
     var rowsDNP = {};
     for (var i = 0; i < count; i++) {
-        if (skipComponent(modules[i])) {
+        if (skipComponent(modules[i], config)) {
             if (modules[i]["footprint"].pads.length <= 1) {
                 continue;
             }
 
-            if (!rowsDNP.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsDNP, modules[i].itemkey)) {
                 rowsDNP[modules[i].itemkey] = [modules[i]["component"].val, modules[i].soldertype, modules[i]["component"].footprint, " ", 1, " ", [modules[i]["component"].ref], " ", [], []];
             } else {
                 rowsDNP[modules[i].itemkey][4]++;
@@ -61,7 +63,7 @@ function exportBOM() {
             continue;
         }
 
-        if (!rows.hasOwnProperty(modules[i].itemkey)) {
+        if (!Object.prototype.hasOwnProperty.call(rows, modules[i].itemkey)) {
             rows[modules[i].itemkey] = [modules[i]["component"].val, modules[i].soldertype, modules[i]["component"].footprint, " ", 1, " ", [modules[i]["component"].ref], " ", [], []];
         } else {
             rows[modules[i].itemkey][4]++;
@@ -99,7 +101,8 @@ function exportBOM() {
 }
 
 function exportPnP() {
-    var pcb = parsePcb();
+    var config = getConfig();
+    var pcb = parsePcb(config);
     if (!pcb) {
         return;
     };
@@ -109,12 +112,12 @@ function exportPnP() {
     var rowsB = {};
     var rowsDNP = {};
     for (var i = 0; i < count; i++) {
-        if (skipComponent(modules[i])) {
+        if (skipComponent(modules[i]), config) {
             if (modules[i]["footprint"].pads.length <= 1) {
                 continue;
             }
 
-            if (!rowsDNP.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsDNP, modules[i].itemkey)) {
                 rowsDNP[modules[i].itemkey] = [i];
             } else {
                 rowsDNP[modules[i].itemkey].push(i);
@@ -123,13 +126,13 @@ function exportPnP() {
         }
 
         if (modules[i]["component"].layer == "F") {
-            if (!rowsF.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsF, modules[i].itemkey)) {
                 rowsF[modules[i].itemkey] = [i];
             } else {
                 rowsF[modules[i].itemkey].push(i);
             }
         } else {
-            if (!rowsB.hasOwnProperty(modules[i].itemkey)) {
+            if (!Object.prototype.hasOwnProperty.call(rowsB, modules[i].itemkey)) {
                 rowsB[modules[i].itemkey] = [i];
             } else {
                 rowsB[modules[i].itemkey].push(i);

@@ -105,30 +105,38 @@ object mainWin: TmainWin
         Left = 7
         Top = 185
         Width = 413
-        Height = 167
+        Height = 103
         Caption = 'Component blacklist '
         TabOrder = 3
-        object CbBlacklistDNP: TCheckBox
+        object CbBlacklistEmpty: TCheckBox
           Left = 14
           Top = 35
-          Width = 183
+          Width = 207
           Height = 17
-          Caption = 'Component with "DNP" comment '
+          Caption = 'Component with "DNP"|""|"~" comment '
           Checked = True
-          Enabled = False
           State = cbChecked
           TabOrder = 0
         end
         object CbBlacklist1Pad: TCheckBox
-          Left = 222
+          Left = 238
           Top = 35
           Width = 135
           Height = 17
           Caption = 'Component with 1 pad'
           Checked = True
-          Enabled = False
           State = cbChecked
           TabOrder = 1
+        end
+        object CbBlacklistTh: TCheckBox
+          Left = 14
+          Top = 67
+          Width = 135
+          Height = 17
+          Caption = 'Component of th'
+          Checked = True
+          State = cbChecked
+          TabOrder = 2
         end
       end
       object GenerateBom: TButton
@@ -139,6 +147,30 @@ object mainWin: TmainWin
         Caption = 'GenerateBom'
         TabOrder = 4
         OnClick = GenerateBomClick
+      end
+      object GroupBox10: TGroupBox
+        Left = 7
+        Top = 297
+        Width = 413
+        Height = 58
+        Caption = 'Pcb outline layer'
+        TabOrder = 5
+        object RBtnKeepOutLayer: TRadioButton
+          Left = 14
+          Top = 28
+          Width = 111
+          Height = 17
+          Caption = 'Keep out layer'
+          TabOrder = 0
+        end
+        object RBtnMech1: TRadioButton
+          Left = 206
+          Top = 28
+          Width = 113
+          Height = 17
+          Caption = 'Mechanical 1'
+          TabOrder = 1
+        end
       end
     end
     object TabSheet2: TTabSheet
@@ -344,6 +376,10 @@ object mainWin: TmainWin
     end
     object TabSheet3: TTabSheet
       Caption = 'Extra fields'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object GroupBox2: TGroupBox
         Left = 7
         Top = 9
