@@ -247,6 +247,40 @@ function findRefInEntry(entry) {
   return entry[3].filter(r => r[0].toLowerCase() == reflookup);
 }
 
+function bomFieldText(value) {
+  if (value === undefined || value === null) return "-";
+  var text = String(value).trim();
+  return text == "" ? "-" : text;
+}
+
+var bomLinksCache = null;
+
+function bomShowsValueColumn() {
+  return !(pcbdata.bom && pcbdata.bom.has_schematic === false);
+}
+
+function bomHasLinks() {
+  if (bomLinksCache === null) {
+    bomLinksCache = false;
+    var entries = pcbdata.bom && pcbdata.bom.both ? pcbdata.bom.both : [];
+    for (var entry of entries) {
+      if (entry[7] && entry[7][0] && entry[7][1]) {
+        bomLinksCache = true;
+        break;
+      }
+    }
+  }
+  return bomLinksCache;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function highlightFilter(s) {
   if (!filter) {
     return s;
@@ -402,8 +436,16 @@ function populateBomHeader() {
           config.extra_fields[i], "extra", extraFieldCompareClosure(i)));
       }
     }
-    tr.appendChild(createColumnHeader("Value", "Value", (a, b) => {
-      return valueCompare(a[5], b[5], a[1], b[1]);
+    if (bomShowsValueColumn()) {
+      tr.appendChild(createColumnHeader("Value", "Value", (a, b) => {
+        return valueCompare(a[6], b[6], a[1], b[1]);
+      }));
+    }
+    tr.appendChild(createColumnHeader("Comment", "Comment", (a, b) => {
+      var ca = bomFieldText(a[5]);
+      var cb = bomFieldText(b[5]);
+      if (ca != cb) return ca > cb ? 1 : -1;
+      else return 0;
     }));
     tr.appendChild(createColumnHeader("Footprint", "Footprint", (a, b) => {
       if (a[2] != b[2]) return a[2] > b[2] ? 1 : -1;
@@ -412,6 +454,14 @@ function populateBomHeader() {
     if (settings.bommode == "grouped") {
       tr.appendChild(createColumnHeader("Quantity", "Quantity", (a, b) => {
         return a[3].length - b[3].length;
+      }));
+    }
+    if (bomHasLinks()) {
+      tr.appendChild(createColumnHeader("Link", "Link", (a, b) => {
+        var la = a[7] ? bomFieldText(a[7][0]) : "-";
+        var lb = b[7] ? bomFieldText(b[7][0]) : "-";
+        if (la != lb) return la > lb ? 1 : -1;
+        else return 0;
       }));
     }
   }
@@ -446,7 +496,7 @@ function populateBomBody() {
       expandedTable = []
       for (var bomentry of bomtable) {
         for (var ref of bomentry[3]) {
-          expandedTable.push([1, bomentry[1], bomentry[2], [ref], bomentry[4], bomentry[5]]);
+          expandedTable.push([1, bomentry[1], bomentry[2], [ref], bomentry[4], bomentry[5], bomentry[6], bomentry[7]]);
         }
       }
       bomtable = expandedTable;
@@ -507,9 +557,15 @@ function populateBomBody() {
         td.innerHTML = highlightFilter(bomentry[4][i]);
         tr.appendChild(td);
       }
-      // Value
+      if (bomShowsValueColumn()) {
+        // Value
+        td = document.createElement("TD");
+        td.innerHTML = highlightFilter(bomFieldText(bomentry[1]));
+        tr.appendChild(td);
+      }
+      // Comment
       td = document.createElement("TD");
-      td.innerHTML = highlightFilter(bomentry[1]);
+      td.innerHTML = highlightFilter(bomFieldText(bomentry[5]));
       tr.appendChild(td);
       // Footprint
       td = document.createElement("TD");
@@ -519,6 +575,18 @@ function populateBomBody() {
         // Quantity
         td = document.createElement("TD");
         td.textContent = bomentry[3].length;
+        tr.appendChild(td);
+      }
+      if (bomHasLinks()) {
+        // Link
+        td = document.createElement("TD");
+        var link = bomentry[7];
+        if (link && link[0] && link[1]) {
+          td.innerHTML = '<a href="' + escapeHtml(link[1]) + '" target="_blank" rel="noopener">' +
+            escapeHtml(link[0]) + '</a>';
+        } else {
+          td.textContent = "-";
+        }
         tr.appendChild(td);
       }
     }

@@ -691,6 +691,7 @@ function parsePcb(config) {
 
     var schParamCache = null;
     var schParamTried = false;
+    var schParamAvailable = false;
 
     function toNumber(v) {
         try {
@@ -810,6 +811,7 @@ function parsePcb(config) {
             return;
         }
         var count = getMemberNumber(doc, "DM_ComponentCount");
+        schParamAvailable = count > 0;
         for (var i = 0; i < count && i < 3000; i++) {
             var comp = null;
             try {
@@ -983,17 +985,19 @@ function parsePcb(config) {
 
         oComponent["ref"] = oFootprint.ref;
         // the PCB itself does not store component parameters, read "Value" from the
-        // schematic component linked to this footprint and fall back to Comment
-        var paramValue = getSchematicParameter(Component, "Value");
-        oComponent["val"] = paramValue || Component.Comment.Text;
+        // schematic component linked to this footprint (no fallback to Comment)
+        oComponent["val"] = getSchematicParameter(Component, "Value");
         // keep the Comment, the "skip empty/dnp" filter is based on it
         oComponent["comment"] = Component.Comment.Text;
+        // optional datasheet link parameters, used by the "Link" column
+        oComponent["linkdesc"] = getSchematicParameter(Component, "ComponentLink1Description");
+        oComponent["linkurl"] = getSchematicParameter(Component, "ComponentLink1URL");
         oComponent["footprint"] = Component.Pattern;
         oComponent["layer"] = oFootprint["layer"];
         oComponent["attr"] = null;
 
         res["angle"] = Component.Rotation.round();
-        res["itemkey"] = ["k", oComponent["ref"].slice(0, 1), oComponent["footprint"], oComponent["val"]].join("");
+        res["itemkey"] = ["k", oComponent["ref"].slice(0, 1), oComponent["footprint"], oComponent["val"], oComponent["comment"], oComponent["linkdesc"], oComponent["linkurl"]].join("");
         
         if (isSMD) {
             res["soldertype"] = "smd";
@@ -1055,6 +1059,9 @@ function parsePcb(config) {
         Prim = Iter.NextPCBObject;
     }
     pcb.board.BoardIterator_Destroy(Iter);
+
+    // false when no schematic could be read, used to omit schematic-only columns
+    pcb["has_schematic"] = schParamAvailable;
 
     // parse freepads , all free pads mounted to a footprintNoBom to be rendered
     var footprintNoBom = {};

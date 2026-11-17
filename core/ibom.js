@@ -139,9 +139,10 @@ function generateBom(pcb, config, extra_data) {
     var extra_data = arguments[2] ? arguments[2] : {}; 
 
     var res = {};
+    res["has_schematic"] = pcb["has_schematic"] !== false;
     var extras = [];
     var modules = pcb.modules;
-    var rows = {};  // { itemkey: [quantity, comment, footprint, designator, extras] }
+    var rows = {};  // { itemkey: [quantity, value, footprint, refs, extras, comment] }
     var rowsB = {};
     var rowsF = {};
     var skippedComponents = [];
@@ -173,7 +174,8 @@ function generateBom(pcb, config, extra_data) {
                 }
             }     
 
-            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras];
+            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras, modules[i]["component"].comment || ""];
+            rows[modules[i].itemkey][7] = [modules[i]["component"].linkdesc || "", modules[i]["component"].linkurl || ""];
             extras = [];
         } else {
             rows[modules[i].itemkey][0]++;
@@ -205,12 +207,16 @@ function generateBom(pcb, config, extra_data) {
     res.F = []
     for (var i in rowsF) {
         rowsF[i].push(rows[i][4]); // add extras
+        rowsF[i].push(rows[i][5]); // add comment
+        rowsF[i][7] = rows[i][7];
         res.F.push(rowsF[i]);
     }
 
     res.B = []
     for (var i in rowsB) {
         rowsB[i].push(rows[i][4]); 
+        rowsB[i].push(rows[i][5]); // add comment
+        rowsB[i][7] = rows[i][7];
         res.B.push(rowsB[i]);
     }
     

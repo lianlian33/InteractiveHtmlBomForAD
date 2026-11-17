@@ -86,6 +86,8 @@ function copyToClipboard() {
           }
         } else if (node.nodeName == "MARK") {
           text = text + node.firstChild.nodeValue;
+        } else if (node.nodeName == "A") {
+          text = text + node.textContent;
         } else {
           text = text + node.nodeValue;
         }
@@ -179,7 +181,8 @@ function initUtils() {
                          "(\\b.*)?$", "");
   for (var bom_type of ["both", "F", "B"]) {
     for (var row of pcbdata.bom[bom_type]) {
-      row.push(parseValue(row[1], row[3][0][0]));
+      // index 5 is the Comment column, keep the parsed value at index 6
+      row[6] = parseValue(row[1], row[3][0][0]);
     }
   }
 }
