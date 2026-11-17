@@ -28,7 +28,7 @@ function skipComponent(m, config, extra_data) {
     // } 
     // skip component with empty comment (component.val is now the schematic "Value"
     // parameter, so the DNP marker is looked up in the Comment)
-    if (config.bomFilter.skipempty && m["component"].comment in {"DNP": 1, "": 2, "~": 3}) {
+    if (config.bomFilter.skipempty && m["component"].comment in {"DNP": 1, "~": 2}) {
         return true;
     }
     // skip virtual components

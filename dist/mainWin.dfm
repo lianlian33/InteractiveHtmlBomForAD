@@ -113,7 +113,7 @@ object mainWin: TmainWin
           Top = 35
           Width = 207
           Height = 17
-          Caption = 'Component with "DNP"|""|"~" comment '
+          Caption = 'Component with "DNP"|"~" comment '
           Checked = True
           State = cbChecked
           TabOrder = 0

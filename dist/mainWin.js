@@ -12,8 +12,8 @@ function setChineseCaptions() {
     CbIncludeVias.Caption = "\u5305\u542B\u8FC7\u5B54";
     CbIncludeHatched.Caption = "\u5305\u542B\u7F51\u683C\u94FA\u94DC";
     CbIncludeNets.Caption = "\u5305\u542B\u7F51\u7EDC";
-    GroupBox4.Caption = "\u5143\u4EF6\u6392\u9664\u5217\u8868";
-    CbBlacklistEmpty.Caption = "Comment\u662F\"DNP\"\u3001\"~\"\u6216\u7A7A\u7684\u5143\u4EF6";
+    GroupBox4.Caption = "\u6392\u9664\u5143\u4ef6";
+    CbBlacklistEmpty.Caption = "Comment\u662F\"DNP\"\u6216\"~\"\u7684\u5143\u4EF6";
     CbBlacklist1Pad.Caption = "\u5355\u710A\u76D8\u5143\u4EF6";
     CbBlacklistTh.Caption = "\u76F4\u63D2\uFF08TH\uFF09\u5143\u4EF6";
     GenerateBom.Caption = "\u751F\u6210 IBOM";
