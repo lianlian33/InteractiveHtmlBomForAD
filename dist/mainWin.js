@@ -3,7 +3,47 @@ function startWin() {
     mainWin.Show(); 
 }
 
+function setChineseCaptions() {
+    TabSheet1.Caption = "\u5E38\u89C4";
+    GroupBox1.Caption = "BOM \u8F93\u51FA\u4F4D\u7F6E";
+    StaticText1.Caption = "\u76EE\u5F55";
+    GroupBox3.Caption = "PCB \u9644\u52A0\u6570\u636E";
+    CbIncludeTracksAndSolidPolygons.Caption = "\u5305\u542B\u8D70\u7EBF/\u5B9E\u5FC3\u533A\u57DF";
+    CbIncludeVias.Caption = "\u5305\u542B\u8FC7\u5B54";
+    CbIncludeHatched.Caption = "\u5305\u542B\u7F51\u683C\u94FA\u94DC";
+    CbIncludeNets.Caption = "\u5305\u542B\u7F51\u7EDC";
+    GroupBox4.Caption = "\u5143\u4EF6\u6392\u9664\u5217\u8868";
+    CbBlacklistEmpty.Caption = "Comment\u662F\"DNP\"\u3001\"~\"\u6216\u7A7A\u7684\u5143\u4EF6";
+    CbBlacklist1Pad.Caption = "\u5355\u710A\u76D8\u5143\u4EF6";
+    CbBlacklistTh.Caption = "\u76F4\u63D2\uFF08TH\uFF09\u5143\u4EF6";
+    GenerateBom.Caption = "\u751F\u6210 IBOM";
+    GroupBox10.Caption = "PCB \u677F\u6846\u5C42";
+    RBtnKeepOutLayer.Caption = "Keep-Out \u5C42";
+    RBtnMech1.Caption = "\u673a\u68b0 1 \u5c42";
+    TabSheet2.Caption = "HTML \u9ED8\u8BA4\u8BBE\u7F6E";
+    CbDarkMode.Caption = "\u6DF1\u8272\u6A21\u5F0F";
+    CbShowFootprintPads.Caption = "\u663E\u793A\u5C01\u88C5\u710A\u76D8";
+    CbShowFabricationLayer.Caption = "\u663E\u793A\u5236\u9020\u5C42";
+    CbShowSilkscreen.Caption = "\u663E\u793A\u4E1D\u5370";
+    CbHighlightFirstPin.Caption = "\u9AD8\u4EAE 1 \u53F7\u5F15\u811A";
+    CbContinuousRedrawOnDrag.Caption = "\u62D6\u52A8\u65F6\u8FDE\u7EED\u91CD\u7ED8";
+    GroupBox5.Caption = "BOM \u590D\u9009\u6846";
+    StaticText2.Caption = "PCB \u65CB\u8F6C\u89D2\u5EA6";
+    GroupBox6.Caption = "BOM \u89C6\u56FE";
+    RBtnBomOnly.Caption = "\u4EC5 BOM";
+    RBtnBomLeftDrawingRight.Caption = "BOM \u5728\u5DE6\uFF0CPCB \u5728\u53F3";
+    RBtnBomTopDrawingBottom.Caption = "BOM \u5728\u4E0A\uFF0CPCB \u5728\u4E0B";
+    GroupBox7.Caption = "\u5C42\u89C6\u56FE";
+    RBtnFrontAndBack.Caption = "\u9876\u5C42\u548C\u5E95\u5C42";
+    RBtnFrontOnly.Caption = "\u4EC5\u663E\u793A\u9876\u5C42";
+    RBtnBackOnly.Caption = "\u4EC5\u663E\u793A\u5E95\u5C42";
+    GroupBox8.Caption = "\u5176\u4ED6";
+    CbOpenBrowser.Caption = "\u6253\u5F00\u6D4F\u89C8\u5668";
+    CbOpenExplorer.Caption = "\u6253\u5F00\u6587\u4EF6\u5939";
+}
+
 function mainWinShow(Sender) {
+    setChineseCaptions();
     var iniFileName = CURRENT_PATH + "config.ini";
 
     if (FileExists(iniFileName)) {
