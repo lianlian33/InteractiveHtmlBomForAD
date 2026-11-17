@@ -396,6 +396,7 @@ function main() {
 
     b = 'var pcbdata = JSON.parse(LZString.decompressFromBase64("' + b + '"))';
 
+    config.htmlConfig["settings_version"] = String(new Date().getTime());
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
     filename = pcb.boardpath + "PnPout\\" + pcb.boardname.split(".")[0] + ".html";

@@ -37,9 +37,9 @@ function setChineseCaptions() {
     RBtnFrontAndBack.Caption = "\u9876\u5C42\u548C\u5E95\u5C42";
     RBtnFrontOnly.Caption = "\u4EC5\u663E\u793A\u9876\u5C42";
     RBtnBackOnly.Caption = "\u4EC5\u663E\u793A\u5E95\u5C42";
-    GroupBox8.Caption = "\u5176\u4ED6";
-    CbOpenBrowser.Caption = "\u6253\u5F00\u6D4F\u89C8\u5668";
-    CbOpenExplorer.Caption = "\u6253\u5F00\u6587\u4EF6\u5939";
+    GroupBox8.Caption = "\u751F\u6210\u540E\u64CD\u4F5C";
+    CbOpenBrowser.Caption = "\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00";
+    CbOpenExplorer.Caption = "\u6253\u5F00\u6240\u5728\u6587\u4EF6\u5939";
 }
 
 function mainWinShow(Sender) {
@@ -102,8 +102,7 @@ function mainWinShow(Sender) {
         RBtnFrontOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontOnly", false);
         RBtnFrontAndBack.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontAndBack", true);
         RBtnBackOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerBackOnly", false);
-        // CbOpenBrowser.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenBrowser", false);
-        CbOpenBrowser.Checked = false;
+        CbOpenBrowser.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenBrowser", false);
         CbOpenExplorer.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenExplorer", true);
 
         iniFile.Free;
@@ -165,6 +164,7 @@ function mainWinShow(Sender) {
 }
 
 function GenerateBomClick(Sender) {
+    LblExportDone.Caption = "";
     var iniFileName = CURRENT_PATH + "config.ini";
     setValueToInifile(iniFileName);
 
@@ -210,6 +210,7 @@ function GenerateBomClick(Sender) {
     config.htmlConfig["show_fabrication"] = CbShowFabricationLayer.Checked;
     // config.htmlConfig["extra_fields"] = [];
     config.htmlConfig["board_rotation"] = TTrackBarRotation.Position * 5 - 180;
+    config.htmlConfig["settings_version"] = String(new Date().getTime());
 
     config.include["tracks"] = CbIncludeTracksAndSolidPolygons.Checked;
     config.include["polys"] = CbIncludeTracksAndSolidPolygons.Checked;
@@ -240,18 +241,30 @@ function GenerateBomClick(Sender) {
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
     save2file(html, filename, false);
+    LblExportDone.Caption = "\u5BFC\u51FA\u5B8C\u6210";
 
-    try {
-        var folder = ExtractFilePath(filename);
-        if (folder.length > 3 && folder.charAt(folder.length - 1) == "\\") {
-            folder = folder.substring(0, folder.length - 1);
+    if (CbOpenExplorer.Checked) {
+        try {
+            var folder = ExtractFilePath(filename);
+            if (folder.length > 3 && folder.charAt(folder.length - 1) == "\\") {
+                folder = folder.substring(0, folder.length - 1);
+            }
+            var commandline = "explorer.exe \"" + folder + "\"";
+            var errcode = RunApplication(commandline);
         }
-        var commandline = "explorer.exe \"" + folder + "\"";
-        var errcode = RunApplication(commandline);
+        catch(e) {
+            showmessage(e.message);
+        };
     }
-    catch(e) {
-        showmessage(e.message);
-    };
+    if (CbOpenBrowser.Checked) {
+        try {
+            var shell = new ActiveXObject("Shell.Application");
+            shell.ShellExecute(filename, "", "", "open", 1);
+        }
+        catch(e) {
+            showmessage(e.message);
+        };
+    }
 }
 
 function pickBom(pcb, config, extra_data) {

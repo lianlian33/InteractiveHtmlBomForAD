@@ -148,6 +148,18 @@ object mainWin: TmainWin
         TabOrder = 4
         OnClick = GenerateBomClick
       end
+      object LblExportDone: TStaticText
+        Left = 265
+        Top = 376
+        Width = 90
+        Height = 17
+        Caption = ''
+        Font.Charset = DEFAULT_CHARSET
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        TabOrder = 6
+      end
       object GroupBox10: TGroupBox
         Left = 7
         Top = 297
@@ -355,20 +367,18 @@ object mainWin: TmainWin
         object CbOpenBrowser: TCheckBox
           Left = 14
           Top = 25
-          Width = 94
+          Width = 130
           Height = 17
           Caption = 'Open browser'
-          Enabled = False
           TabOrder = 0
         end
         object CbOpenExplorer: TCheckBox
-          Left = 118
+          Left = 155
           Top = 25
-          Width = 94
+          Width = 130
           Height = 17
           Caption = 'Open explorer'
           Checked = True
-          Enabled = False
           State = cbChecked
           TabOrder = 1
         end
