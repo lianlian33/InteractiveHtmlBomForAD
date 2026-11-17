@@ -228,15 +228,28 @@ function generateBom(pcb, config, extra_data) {
 function save2file(src, filename, noBOM) {
     var noBOM = arguments[2] ? arguments[2] : false; 
     var fso = new ActiveXObject("Scripting.FileSystemObject"); 
-    var filename = filename.replace("/", "\\");
+    var filename = String(filename).replace(/\//g, "\\");
     var arrFolder = filename.split("\\");
     var len = arrFolder.length - 1;
     var folder = "";
+    var start = 0;
+
     if (arrFolder[len] == "") {
         showmessage("path error");
         return;
     }
-    for (var i = 0; i < len; i++) {
+
+    if (filename.indexOf("\\\\") == 0) {
+        // UNC path (\\server\share\...): keep the \\server\share prefix, it can't be created
+        if (len < 3 || arrFolder[2] == "" || arrFolder[3] == "") {
+            showmessage("path error");
+            return;
+        }
+        folder = "\\\\" + arrFolder[2] + "\\" + arrFolder[3] + "\\";
+        start = 4;
+    }
+
+    for (var i = start; i < len; i++) {
         if (arrFolder[i] == "") {
             showmessage("path error");
             return;

@@ -202,7 +202,11 @@ function GenerateBomClick(Sender) {
     save2file(html, filename, false);
 
     try {
-        var commandline = "explorer.exe " + ExtractFilePath(filename);
+        var folder = ExtractFilePath(filename);
+        if (folder.length > 3 && folder.charAt(folder.length - 1) == "\\") {
+            folder = folder.substring(0, folder.length - 1);
+        }
+        var commandline = "explorer.exe \"" + folder + "\"";
         var errcode = RunApplication(commandline);
     }
     catch(e) {
@@ -356,16 +360,28 @@ function setValueToInifile(iniFileName) {
 
 function getSaveDir(text) {
     var fso = new ActiveXObject("Scripting.FileSystemObject"); 
-    var filename = text.replace("/", "\\");
+    var filename = String(text).replace(/\//g, "\\");
     var arr = filename.split("\\");
     var len = arr.length - 1;
+    var root = arr[0];
+    var start = 1;
 
-    if (!fso.FolderExists(arr[0])) {
+    if (filename.indexOf("\\\\") == 0) {
+        // UNC path (\\server\share\...): the first two empty segments are part of the prefix
+        if (len < 3 || arr[2] == "" || arr[3] == "") {
+            showmessage("Directory error");
+            return "";
+        }
+        root = "\\\\" + arr[2] + "\\" + arr[3];
+        start = 4;
+    }
+
+    if (!fso.FolderExists(root)) {
         showmessage("Directory error");
         return "";
     }
 
-    for (var i = 0; i <= len; i++) {
+    for (var i = start; i <= len; i++) {
         if (arr[i] == "") {
             showmessage("Directory error");
             return "";
