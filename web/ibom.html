@@ -58,71 +58,71 @@
         <div class="menu-content">
           <label class="menu-label menu-label-top" style="width: calc(50% - 18px)">
             <input id="darkmodeCheckbox" type="checkbox" onchange="setDarkMode(this.checked)">
-            Dark mode
+            &#28145;&#33394;&#27169;&#24335;
           </label><!-- This comment eats space! All of it!
           --><label class="menu-label menu-label-top" style="width: calc(50% - 17px); border-left: 0;">
             <input id="fullscreenCheckbox" type="checkbox" onchange="setFullscreen(this.checked)">
-            Full Screen
+            &#20840;&#23631;
           </label>
           <label class="menu-label" style="width: calc(50% - 18px)">
             <input id="fabricationCheckbox" type="checkbox" checked onchange="fabricationVisible(this.checked)">
-            Fab layer
+            &#21046;&#36896;&#23618;
           </label><!-- This comment eats space! All of it!
           --><label class="menu-label" style="width: calc(50% - 17px); border-left: 0;">
             <input id="silkscreenCheckbox" type="checkbox" checked onchange="silkscreenVisible(this.checked)">
-            Silkscreen
+            &#19997;&#21360;
           </label>
           <label class="menu-label" style="width: calc(50% - 18px)">
             <input id="referencesCheckbox" type="checkbox" checked onchange="referencesVisible(this.checked)">
-            References
+            &#20301;&#21495;
           </label><!-- This comment eats space! All of it!
           --><label class="menu-label" style="width: calc(50% - 17px); border-left: 0;">
             <input id="valuesCheckbox" type="checkbox" checked onchange="valuesVisible(this.checked)">
-            Values
+            &#25968;&#20540;
           </label>
           <div id="tracksAndZonesCheckboxes">
             <label class="menu-label" style="width: calc(50% - 18px)">
               <input id="tracksCheckbox" type="checkbox" checked onchange="tracksVisible(this.checked)">
-              Tracks
+              &#36208;&#32447;
             </label><!-- This comment eats space! All of it!
             --><label class="menu-label" style="width: calc(50% - 17px); border-left: 0;">
               <input id="zonesCheckbox" type="checkbox" checked onchange="zonesVisible(this.checked)">
-              Zones
+              &#25975;&#38108;
             </label>
           </div>
           <label class="menu-label" style="width: calc(50% - 18px)">
             <input id="padsCheckbox" type="checkbox" checked onchange="padsVisible(this.checked)">
-            Pads
+            &#28938;&#30424;
           </label><!-- This comment eats space! All of it!
           --><label class="menu-label" style="width: calc(50% - 17px); border-left: 0;">
             <input id="dnpOutlineCheckbox" type="checkbox" checked onchange="dnpOutline(this.checked)">
-            DNP outlined
+            DNP &#22806;&#26694;
           </label>
           <label class="menu-label">
             <input id="highlightpin1Checkbox" type="checkbox" onchange="setHighlightPin1(this.checked)">
-            Highlight first pin
+            &#39640;&#20142; 1 &#21495;&#24341;&#33050;
           </label>
           <label class="menu-label">
             <input id="dragCheckbox" type="checkbox" checked onchange="setRedrawOnDrag(this.checked)">
-            Continuous redraw on drag
+            &#25302;&#21160;&#26102;&#36830;&#32493;&#37325;&#32472;
           </label>
           <label class="menu-label">
-            <span>Board rotation</span>
+            <span>&#26495;&#26059;&#36716;&#35282;&#24230;</span>
             <span style="float: right"><span id="rotationDegree">0</span>&#176;</span>
             <input id="boardRotation" type="range" min="-36" max="36" value="0" class="slider" oninput="setBoardRotation(this.value)">
           </label>
           <label class="menu-label">
-            <div style="margin-left: 5px">Bom checkboxes</div>
+            <div style="margin-left: 5px">BOM &#22797;&#36873;&#26694;</div>
             <input id="bomCheckboxes" class="menu-textbox" type=text
                    oninput="setBomCheckboxes(this.value)">
           </label>
           <label class="menu-label">
-            <div style="margin-left: 5px">Darken when checked</div>
+            <div style="margin-left: 5px">&#21246;&#36873;&#21518;&#21464;&#26263;</div>
             <div id="darkenWhenCheckedContainer"></div>
           </label>
           <label class="menu-label">
             <span class="shameless-plug">
-              <span>Created using</span>
+              <span>&#22522;&#20110;&#24320;&#28304;&#39033;&#30446;</span>
               <a id="github-link" target="blank" href="https://github.com/openscopeproject/InteractiveHtmlBom">InteractiveHtmlBom</a>
             </span>
           </label>
@@ -131,32 +131,32 @@
       <div class="button-container hideonprint"
            style="float: right; position: relative; top: 8px">
         <button id="fl-btn" class="left-most-button" onclick="changeCanvasLayout('F')"
-                title="Front only">F
+                title="&#20165;&#39030;&#23618;">F
         </button>
         <button id="fb-btn" class="middle-button" onclick="changeCanvasLayout('FB')"
-                title="Front and Back">FB
+                title="&#39030;&#23618;&#21644;&#24213;&#23618;">FB
         </button>
         <button id="bl-btn" class="right-most-button" onclick="changeCanvasLayout('B')"
-                title="Back only">B
+                title="&#20165;&#24213;&#23618;">B
         </button>
       </div>
       <div class="button-container hideonprint"
            style="float: right; position: relative; top: 8px">
         <button id="bom-btn" class="left-most-button" onclick="changeBomLayout('bom-only')"
-                title="BOM only"></button>
+                title="&#20165; BOM"></button>
         <button id="lr-btn" class="middle-button" onclick="changeBomLayout('left-right')"
-                title="BOM left, drawings right"></button>
+                title="BOM &#22312;&#24038;&#65292;PCB &#22312;&#21491;"></button>
         <button id="tb-btn" class="right-most-button" onclick="changeBomLayout('top-bottom')"
-                title="BOM top, drawings bot"></button>
+                title="BOM &#22312;&#19978;&#65292;PCB &#22312;&#19979;"></button>
       </div>
       <div class="button-container hideonprint"
            style="float: right; position: relative; top: 8px">
         <button id="bom-grouped-btn" class="left-most-button" onclick="changeBomMode('grouped')"
-                title="Grouped BOM"></button>
+                title="&#20998;&#32452; BOM"></button>
         <button id="bom-ungrouped-btn" class="middle-button" onclick="changeBomMode('ungrouped')"
-                title="Ungrouped BOM"></button>
+                title="&#26410;&#20998;&#32452; BOM"></button>
         <button id="bom-netlist-btn" class="right-most-button" onclick="changeBomMode('netlist')"
-                title="Netlist"></button>
+                title="&#32593;&#32476;&#34920;"></button>
       </div>
       <div class="hideonprint menu" style="float: right; top: 8px;">
         <button class="statsbtn"></button>
@@ -164,31 +164,31 @@
           <table class="stats">
             <tbody>
               <tr>
-                <td width="40%">Board stats</td>
-                <td>Front</td>
-                <td>Back</td>
-                <td>Total</td>
+                <td width="40%">&#26495;&#32479;&#35745;</td>
+                <td>&#39030;&#23618;</td>
+                <td>&#24213;&#23618;</td>
+                <td>&#21512;&#35745;</td>
               </tr>
               <tr>
-                <td>Components</td>
+                <td>&#20803;&#20214;&#25968;</td>
                 <td id="stats-components-front">~</td>
                 <td id="stats-components-back">~</td>
                 <td id="stats-components-total">~</td>
               </tr>
               <tr>
-                <td>Groups</td>
+                <td>&#20998;&#32452;&#25968;</td>
                 <td id="stats-groups-front">~</td>
                 <td id="stats-groups-back">~</td>
                 <td id="stats-groups-total">~</td>
               </tr>
               <tr>
-                <td>SMD pads</td>
+                <td>SMD &#28938;&#30424;</td>
                 <td id="stats-smd-pads-front">~</td>
                 <td id="stats-smd-pads-back">~</td>
                 <td id="stats-smd-pads-total">~</td>
               </tr>
               <tr>
-                <td>TH pads</td>
+                <td>&#36890;&#23380;&#28938;&#30424;</td>
                 <td colspan=3 id="stats-th-pads">~</td>
               </tr>
             </tbody>
@@ -197,7 +197,7 @@
             <col width="40%"/><col />
             <tbody id="checkbox-stats">
               <tr>
-                <td colspan=2 style="border-top: 0">Checkboxes</td>
+                <td colspan=2 style="border-top: 0">&#22797;&#36873;&#26694;&#32479;&#35745;</td>
               </tr>
             </tbody>
           </table>
@@ -207,28 +207,28 @@
         <button class="iobtn"></button>
         <div class="menu-content">
           <div class="menu-label menu-label-top">
-            <div style="margin-left: 5px;">Save board image</div>
+            <div style="margin-left: 5px;">&#20445;&#23384;&#26495;&#22270;</div>
             <div class="flexbox">
-              <input id="render-save-width" class="menu-textbox" type="text" value="1000" placeholder="Width"
+              <input id="render-save-width" class="menu-textbox" type="text" value="1000" placeholder="&#23485;&#24230;"
                   style="flex-grow: 1; width: 50px;" oninput="validateSaveImgDimension(this)">
               <span>X</span>
-              <input id="render-save-height" class="menu-textbox" type="text" value="1000" placeholder="Height"
+              <input id="render-save-height" class="menu-textbox" type="text" value="1000" placeholder="&#39640;&#24230;"
                   style="flex-grow: 1; width: 50px;" oninput="validateSaveImgDimension(this)">
             </div>
             <label>
               <input id="render-save-transparent" type="checkbox">
-              Transparent background
+              &#36879;&#26126;&#32972;&#26223;
             </label>
             <div class="flexbox">
-              <button class="savebtn" onclick="saveImage('F')">Front</button>
-              <button class="savebtn" onclick="saveImage('B')">Back</button>
+              <button class="savebtn" onclick="saveImage('F')">&#39030;&#23618;</button>
+              <button class="savebtn" onclick="saveImage('B')">&#24213;&#23618;</button>
             </div>
           </div>
           <div class="menu-label">
-            <span style="margin-left: 5px;">Config and checkbox state</span>
+            <span style="margin-left: 5px;">&#37197;&#32622;&#19982;&#21246;&#36873;&#29366;&#24577;</span>
             <div class="flexbox">
-              <button class="savebtn" onclick="saveSettings()">Export</button>
-              <button class="savebtn" onclick="loadSettings()">Import</button>
+              <button class="savebtn" onclick="saveSettings()">&#23548;&#20986;</button>
+              <button class="savebtn" onclick="loadSettings()">&#23548;&#20837;</button>
             </div>
           </div>
         </div>
@@ -265,7 +265,7 @@
         <input id="filter" class="textbox searchbox filter hideonprint" type="text" placeholder="Filter"
                oninput="updateFilter(this.value)">
         <div class="button-container hideonprint" style="float: left; margin: 0;">
-          <button id="copy" title="Copy bom table to clipboard"
+          <button id="copy" title="&#22797;&#21046; BOM &#34920;&#26684;&#21040;&#21098;&#36148;&#26495;"
                onclick="copyToClipboard()"></button>
         </div>
       </div>

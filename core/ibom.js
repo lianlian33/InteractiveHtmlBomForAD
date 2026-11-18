@@ -26,8 +26,9 @@ function skipComponent(m, config, extra_data) {
     // if (ref_prefix + "*" in config.bomFilter.skiplist) {
     //     return true;
     // } 
-    // skip component with empty comment
-    if (config.bomFilter.skipempty && m["component"].val in {"DNP": 1, "": 2, "~": 3}) {
+    // skip component with empty comment (component.val is now the schematic "Value"
+    // parameter, so the DNP marker is looked up in the Comment)
+    if (config.bomFilter.skipempty && m["component"].comment in {"DNP": 1, "~": 2}) {
         return true;
     }
     // skip virtual components
@@ -138,9 +139,10 @@ function generateBom(pcb, config, extra_data) {
     var extra_data = arguments[2] ? arguments[2] : {}; 
 
     var res = {};
+    res["has_schematic"] = pcb["has_schematic"] !== false;
     var extras = [];
     var modules = pcb.modules;
-    var rows = {};  // { itemkey: [quantity, comment, footprint, designator, extras] }
+    var rows = {};  // { itemkey: [quantity, value, footprint, refs, extras, comment] }
     var rowsB = {};
     var rowsF = {};
     var skippedComponents = [];
@@ -172,7 +174,8 @@ function generateBom(pcb, config, extra_data) {
                 }
             }     
 
-            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras];
+            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras, modules[i]["component"].comment || ""];
+            rows[modules[i].itemkey][7] = [modules[i]["component"].linkdesc || "", modules[i]["component"].linkurl || ""];
             extras = [];
         } else {
             rows[modules[i].itemkey][0]++;
@@ -204,12 +207,16 @@ function generateBom(pcb, config, extra_data) {
     res.F = []
     for (var i in rowsF) {
         rowsF[i].push(rows[i][4]); // add extras
+        rowsF[i].push(rows[i][5]); // add comment
+        rowsF[i][7] = rows[i][7];
         res.F.push(rowsF[i]);
     }
 
     res.B = []
     for (var i in rowsB) {
         rowsB[i].push(rows[i][4]); 
+        rowsB[i].push(rows[i][5]); // add comment
+        rowsB[i][7] = rows[i][7];
         res.B.push(rowsB[i]);
     }
     
@@ -221,15 +228,28 @@ function generateBom(pcb, config, extra_data) {
 function save2file(src, filename, noBOM) {
     var noBOM = arguments[2] ? arguments[2] : false; 
     var fso = new ActiveXObject("Scripting.FileSystemObject"); 
-    var filename = filename.replace("/", "\\");
+    var filename = String(filename).replace(/\//g, "\\");
     var arrFolder = filename.split("\\");
     var len = arrFolder.length - 1;
     var folder = "";
+    var start = 0;
+
     if (arrFolder[len] == "") {
         showmessage("path error");
         return;
     }
-    for (var i = 0; i < len; i++) {
+
+    if (filename.indexOf("\\\\") == 0) {
+        // UNC path (\\server\share\...): keep the \\server\share prefix, it can't be created
+        if (len < 3 || arrFolder[2] == "" || arrFolder[3] == "") {
+            showmessage("path error");
+            return;
+        }
+        folder = "\\\\" + arrFolder[2] + "\\" + arrFolder[3] + "\\";
+        start = 4;
+    }
+
+    for (var i = start; i < len; i++) {
         if (arrFolder[i] == "") {
             showmessage("path error");
             return;
@@ -376,6 +396,7 @@ function main() {
 
     b = 'var pcbdata = JSON.parse(LZString.decompressFromBase64("' + b + '"))';
 
+    config.htmlConfig["settings_version"] = String(new Date().getTime());
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
     filename = pcb.boardpath + "PnPout\\" + pcb.boardname.split(".")[0] + ".html";

@@ -256,6 +256,14 @@ canvas:active {
   width: 15%;
 }
 
+.bom .Comment {
+  width: 15%;
+}
+
+.bom .Link {
+  width: 10%;
+}
+
 .bom .Quantity {
   width: 65px;
 }

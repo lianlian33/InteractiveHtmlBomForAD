@@ -296,7 +296,11 @@ function drawPadHole(ctx, pad, padHoleColor) {
   ctx.restore();
 }
 
-function drawFootprint(ctx, layer, scalefactor, footprint, padColor, padHoleColor, outlineColor, highlight, outline) {
+function drawFootprint(ctx, layer, scalefactor, footprint, padColor, padHoleColor, outlineColor, highlight, outline, dim) {
+  ctx.save();
+  if (dim && !highlight) {
+    ctx.globalAlpha = 0.25;
+  }
   if (highlight) {
     // draw bounding box
     if (footprint.layer == layer) {
@@ -311,6 +315,11 @@ function drawFootprint(ctx, layer, scalefactor, footprint, padColor, padHoleColo
       ctx.strokeStyle = padColor;
       ctx.strokeRect(0, 0, ...footprint.bbox.size);
       ctx.restore();
+    }
+    if (dim) {
+      // Dimmed footprints only show the highlight bbox, not red pads.
+      ctx.restore();
+      return;
     }
   }
   // draw drawings
@@ -333,6 +342,7 @@ function drawFootprint(ctx, layer, scalefactor, footprint, padColor, padHoleColo
       drawPadHole(ctx, pad, padHoleColor);
     }
   }
+  ctx.restore();
 }
 
 function drawEdgeCuts(canvas, scalefactor) {
@@ -341,6 +351,24 @@ function drawEdgeCuts(canvas, scalefactor) {
   for (var edge of pcbdata.edges) {
     drawedge(ctx, scalefactor, edge, edgecolor);
   }
+}
+
+var darkenedFootprints = null;
+
+// Footprint indices whose components are checked in the "darken when checked" column.
+function getDarkenedFootprints() {
+  if (!settings.darkenWhenChecked ||
+    settings.checkboxes.indexOf(settings.darkenWhenChecked) < 0) {
+    return null;
+  }
+  if (darkenedFootprints === null) {
+    darkenedFootprints = getStoredCheckboxRefs(settings.darkenWhenChecked);
+  }
+  return darkenedFootprints;
+}
+
+function invalidateDarkenedFootprints() {
+  darkenedFootprints = null;
 }
 
 function drawFootprints(canvas, layer, scalefactor, highlight) {
@@ -354,11 +382,13 @@ function drawFootprints(canvas, layer, scalefactor, highlight) {
     padColor = style.getPropertyValue('--pad-color-highlight');
     outlineColor = style.getPropertyValue('--pin1-outline-color-highlight');
   }
+  var darkened = getDarkenedFootprints();
   for (var i = 0; i < pcbdata.footprints.length; i++) {
     var mod = pcbdata.footprints[i];
     var outline = settings.renderDnpOutline && pcbdata.bom.skipped.includes(i);
     if (!highlight || highlightedFootprints.includes(i)) {
-      drawFootprint(ctx, layer, scalefactor, mod, padColor, padHoleColor, outlineColor, highlight, outline);
+      drawFootprint(ctx, layer, scalefactor, mod, padColor, padHoleColor, outlineColor,
+        highlight, outline, darkened !== null && darkened.has(i));
     }
   }
 }

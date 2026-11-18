@@ -3,7 +3,47 @@ function startWin() {
     mainWin.Show(); 
 }
 
+function setChineseCaptions() {
+    TabSheet1.Caption = "\u5E38\u89C4";
+    GroupBox1.Caption = "BOM \u8F93\u51FA\u4F4D\u7F6E";
+    StaticText1.Caption = "\u76EE\u5F55";
+    GroupBox3.Caption = "PCB \u9644\u52A0\u6570\u636E";
+    CbIncludeTracksAndSolidPolygons.Caption = "\u5305\u542B\u8D70\u7EBF/\u5B9E\u5FC3\u533A\u57DF";
+    CbIncludeVias.Caption = "\u5305\u542B\u8FC7\u5B54";
+    CbIncludeHatched.Caption = "\u5305\u542B\u7F51\u683C\u94FA\u94DC";
+    CbIncludeNets.Caption = "\u5305\u542B\u7F51\u7EDC";
+    GroupBox4.Caption = "\u6392\u9664\u5143\u4ef6";
+    CbBlacklistEmpty.Caption = "Comment\u662F\"DNP\"\u6216\"~\"\u7684\u5143\u4EF6";
+    CbBlacklist1Pad.Caption = "\u5355\u710A\u76D8\u5143\u4EF6";
+    CbBlacklistTh.Caption = "\u76F4\u63D2\uFF08TH\uFF09\u5143\u4EF6";
+    GenerateBom.Caption = "\u751F\u6210 IBOM";
+    GroupBox10.Caption = "PCB \u677F\u6846\u5C42";
+    RBtnKeepOutLayer.Caption = "Keep-Out \u5C42";
+    RBtnMech1.Caption = "\u673a\u68b0 1 \u5c42";
+    TabSheet2.Caption = "HTML \u9ED8\u8BA4\u8BBE\u7F6E";
+    CbDarkMode.Caption = "\u6DF1\u8272\u6A21\u5F0F";
+    CbShowFootprintPads.Caption = "\u663E\u793A\u5C01\u88C5\u710A\u76D8";
+    CbShowFabricationLayer.Caption = "\u663E\u793A\u5236\u9020\u5C42";
+    CbShowSilkscreen.Caption = "\u663E\u793A\u4E1D\u5370";
+    CbHighlightFirstPin.Caption = "\u9AD8\u4EAE 1 \u53F7\u5F15\u811A";
+    CbContinuousRedrawOnDrag.Caption = "\u62D6\u52A8\u65F6\u8FDE\u7EED\u91CD\u7ED8";
+    GroupBox5.Caption = "BOM \u590D\u9009\u6846";
+    StaticText2.Caption = "PCB \u65CB\u8F6C\u89D2\u5EA6";
+    GroupBox6.Caption = "BOM \u89C6\u56FE";
+    RBtnBomOnly.Caption = "\u4EC5 BOM";
+    RBtnBomLeftDrawingRight.Caption = "BOM \u5728\u5DE6\uFF0CPCB \u5728\u53F3";
+    RBtnBomTopDrawingBottom.Caption = "BOM \u5728\u4E0A\uFF0CPCB \u5728\u4E0B";
+    GroupBox7.Caption = "\u5C42\u89C6\u56FE";
+    RBtnFrontAndBack.Caption = "\u9876\u5C42\u548C\u5E95\u5C42";
+    RBtnFrontOnly.Caption = "\u4EC5\u663E\u793A\u9876\u5C42";
+    RBtnBackOnly.Caption = "\u4EC5\u663E\u793A\u5E95\u5C42";
+    GroupBox8.Caption = "\u751F\u6210\u540E\u64CD\u4F5C";
+    CbOpenBrowser.Caption = "\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00";
+    CbOpenExplorer.Caption = "\u6253\u5F00\u6240\u5728\u6587\u4EF6\u5939";
+}
+
 function mainWinShow(Sender) {
+    setChineseCaptions();
     var iniFileName = CURRENT_PATH + "config.ini";
 
     if (FileExists(iniFileName)) {
@@ -62,8 +102,7 @@ function mainWinShow(Sender) {
         RBtnFrontOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontOnly", false);
         RBtnFrontAndBack.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontAndBack", true);
         RBtnBackOnly.Checked = iniFile.ReadBool("HtmlDefaults", "PcbLayerBackOnly", false);
-        // CbOpenBrowser.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenBrowser", false);
-        CbOpenBrowser.Checked = false;
+        CbOpenBrowser.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenBrowser", false);
         CbOpenExplorer.Checked = iniFile.ReadBool("HtmlDefaults", "OtherOpenExplorer", true);
 
         iniFile.Free;
@@ -125,6 +164,7 @@ function mainWinShow(Sender) {
 }
 
 function GenerateBomClick(Sender) {
+    LblExportDone.Caption = "";
     var iniFileName = CURRENT_PATH + "config.ini";
     setValueToInifile(iniFileName);
 
@@ -170,6 +210,7 @@ function GenerateBomClick(Sender) {
     config.htmlConfig["show_fabrication"] = CbShowFabricationLayer.Checked;
     // config.htmlConfig["extra_fields"] = [];
     config.htmlConfig["board_rotation"] = TTrackBarRotation.Position * 5 - 180;
+    config.htmlConfig["settings_version"] = String(new Date().getTime());
 
     config.include["tracks"] = CbIncludeTracksAndSolidPolygons.Checked;
     config.include["polys"] = CbIncludeTracksAndSolidPolygons.Checked;
@@ -200,14 +241,30 @@ function GenerateBomClick(Sender) {
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
     save2file(html, filename, false);
+    LblExportDone.Caption = "\u5BFC\u51FA\u5B8C\u6210";
 
-    try {
-        var commandline = "explorer.exe " + ExtractFilePath(filename);
-        var errcode = RunApplication(commandline);
+    if (CbOpenExplorer.Checked) {
+        try {
+            var folder = ExtractFilePath(filename);
+            if (folder.length > 3 && folder.charAt(folder.length - 1) == "\\") {
+                folder = folder.substring(0, folder.length - 1);
+            }
+            var commandline = "explorer.exe \"" + folder + "\"";
+            var errcode = RunApplication(commandline);
+        }
+        catch(e) {
+            showmessage(e.message);
+        };
     }
-    catch(e) {
-        showmessage(e.message);
-    };
+    if (CbOpenBrowser.Checked) {
+        try {
+            var shell = new ActiveXObject("Shell.Application");
+            shell.ShellExecute(filename, "", "", "open", 1);
+        }
+        catch(e) {
+            showmessage(e.message);
+        };
+    }
 }
 
 function pickBom(pcb, config, extra_data) {
@@ -216,9 +273,10 @@ function pickBom(pcb, config, extra_data) {
     var extra_data = arguments[2] ? arguments[2] : {}; 
 
     var res = {};
+    res["has_schematic"] = pcb["has_schematic"] !== false;
     var extras = [];
     var modules = pcb.modules;
-    var rows = {};  // { itemkey: [quantity, comment, footprint, designator, extras] }
+    var rows = {};  // { itemkey: [quantity, value, footprint, refs, extras, comment] }
     var rowsB = {};
     var rowsF = {};
     var skippedComponents = [];
@@ -250,7 +308,8 @@ function pickBom(pcb, config, extra_data) {
                 }
             }     
 
-            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras];
+            rows[modules[i].itemkey] = [1, modules[i]["component"].val, modules[i]["component"].footprint, [[modules[i]["component"].ref, i]], extras, modules[i]["component"].comment || ""];
+            rows[modules[i].itemkey][7] = [modules[i]["component"].linkdesc || "", modules[i]["component"].linkurl || ""];
             extras = [];
         } else {
             rows[modules[i].itemkey][0]++;
@@ -282,12 +341,16 @@ function pickBom(pcb, config, extra_data) {
     res.F = []
     for (var i in rowsF) {
         rowsF[i].push(rows[i][4]); // add extras
+        rowsF[i].push(rows[i][5]); // add comment
+        rowsF[i][7] = rows[i][7];
         res.F.push(rowsF[i]);
     }
 
     res.B = []
     for (var i in rowsB) {
         rowsB[i].push(rows[i][4]); 
+        rowsB[i].push(rows[i][5]); // add comment
+        rowsB[i][7] = rows[i][7];
         res.B.push(rowsB[i]);
     }
     
@@ -350,16 +413,28 @@ function setValueToInifile(iniFileName) {
 
 function getSaveDir(text) {
     var fso = new ActiveXObject("Scripting.FileSystemObject"); 
-    var filename = text.replace("/", "\\");
+    var filename = String(text).replace(/\//g, "\\");
     var arr = filename.split("\\");
     var len = arr.length - 1;
+    var root = arr[0];
+    var start = 1;
 
-    if (!fso.FolderExists(arr[0])) {
+    if (filename.indexOf("\\\\") == 0) {
+        // UNC path (\\server\share\...): the first two empty segments are part of the prefix
+        if (len < 3 || arr[2] == "" || arr[3] == "") {
+            showmessage("Directory error");
+            return "";
+        }
+        root = "\\\\" + arr[2] + "\\" + arr[3];
+        start = 4;
+    }
+
+    if (!fso.FolderExists(root)) {
         showmessage("Directory error");
         return "";
     }
 
-    for (var i = 0; i <= len; i++) {
+    for (var i = start; i <= len; i++) {
         if (arr[i] == "") {
             showmessage("Directory error");
             return "";

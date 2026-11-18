@@ -86,6 +86,8 @@ function copyToClipboard() {
           }
         } else if (node.nodeName == "MARK") {
           text = text + node.firstChild.nodeValue;
+        } else if (node.nodeName == "A") {
+          text = text + node.textContent;
         } else {
           text = text + node.nodeValue;
         }
@@ -179,7 +181,8 @@ function initUtils() {
                          "(\\b.*)?$", "");
   for (var bom_type of ["both", "F", "B"]) {
     for (var row of pcbdata.bom[bom_type]) {
-      row.push(parseValue(row[1], row[3][0][0]));
+      // index 5 is the Comment column, keep the parsed value at index 6
+      row[6] = parseValue(row[1], row[3][0][0]);
     }
   }
 }
@@ -376,6 +379,7 @@ function loadSettings() {
 function overwriteSettings(newSettings) {
   initDone = false;
   Object.assign(settings, newSettings);
+  invalidateDarkenedFootprints();
   writeStorage("bomlayout", settings.bomlayout);
   writeStorage("bommode", settings.bommode);
   writeStorage("canvaslayout", settings.canvaslayout);
@@ -452,7 +456,30 @@ var settings = {
   renderZones: true,
 }
 
+function resetStaleSettings() {
+  // A newly generated html carries a new settings_version, so the values picked
+  // in the generator dialog win over settings remembered by this browser.
+  if (!config.settings_version) {
+    return;
+  }
+  var version = String(config.settings_version);
+  if (readStorage("settingsVersion") === version) {
+    return;
+  }
+  var staleKeys = ["bomlayout", "bommode", "canvaslayout", "bomCheckboxes",
+    "darkenWhenChecked", "padsVisible", "fabricationVisible", "silkscreenVisible",
+    "referencesVisible", "valuesVisible", "tracksVisible", "zonesVisible",
+    "dnpOutline", "redrawOnDrag", "darkmode", "highlightpin1", "boardRotation"];
+  if (storage) {
+    for (var i = 0; i < staleKeys.length; i++) {
+      storage.removeItem(storagePrefix + staleKeys[i]);
+    }
+  }
+  writeStorage("settingsVersion", version);
+}
+
 function initDefaults() {
+  resetStaleSettings();
   settings.bomlayout = readStorage("bomlayout");
   if (settings.bomlayout === null) {
     settings.bomlayout = config.bom_view;

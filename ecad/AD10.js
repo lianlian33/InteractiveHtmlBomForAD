@@ -676,6 +676,232 @@ function parsePcb(config) {
     }
 
 
+    // ---- schematic parameters (Workspace Manager, matched by SourceUniqueId / designator) ----
+
+    function toText(v) {
+        if (v == null) {
+            return "";
+        }
+        try {
+            return String(v);
+        } catch (e) {
+            return "";
+        }
+    }
+
+    var schParamCache = null;
+    var schParamTried = false;
+    var schParamAvailable = false;
+
+    function toNumber(v) {
+        try {
+            var n = Number(v);
+            if (!isNaN(n)) {
+                return n;
+            }
+        } catch (e) {
+        }
+        try {
+            var n2 = Number(v());
+            if (!isNaN(n2)) {
+                return n2;
+            }
+        } catch (e2) {
+        }
+        return 0;
+    }
+
+    function getMemberNumber(obj, member) {
+        var v = null;
+        try {
+            v = obj[member];
+        } catch (e) {
+            return 0;
+        }
+        return toNumber(v);
+    }
+
+    function getMemberText(obj, member) {
+        var v = null;
+        try {
+            v = obj[member];
+        } catch (e) {
+            return "";
+        }
+        try {
+            return toText(v());
+        } catch (e2) {
+        }
+        return toText(v);
+    }
+
+    function getFlattenedDocument(project) {
+        var doc = null;
+        try {
+            doc = project.DM_DocumentFlattened;
+        } catch (e) {
+        }
+        if (doc == null) {
+            // the project may not be compiled yet
+            try {
+                project.DM_Compile();
+            } catch (e2) {
+            }
+            try {
+                doc = project.DM_DocumentFlattened;
+            } catch (e3) {
+            }
+        }
+        return doc;
+    }
+
+    // GetWorkSpace is a global scripting function; Client.GetDXPWorkspace is the fallback
+    function getWorkspace() {
+        var ws = null;
+        try {
+            ws = GetWorkSpace;
+        } catch (e) {
+        }
+        if (ws == null) {
+            try {
+                ws = Client.GetDXPWorkspace;
+            } catch (e2) {
+            }
+        }
+        if (ws != null) {
+            // a zero argument method can also be called directly
+            try {
+                var w = ws();
+                if (w != null) {
+                    ws = w;
+                }
+            } catch (e3) {
+            }
+        }
+        return ws;
+    }
+
+    // read all parameters of the flattened schematic document once and cache them
+    function buildSchematicParameterCache() {
+        if (schParamTried) {
+            return;
+        }
+        schParamTried = true;
+        schParamCache = {"byId": {}, "byRef": {}};
+        var ws = getWorkspace();
+        if (ws == null) {
+            return;
+        }
+        var project = null;
+        try {
+            project = ws.DM_FocusedProject;
+        } catch (e3) {
+        }
+        if (project == null) {
+            try {
+                project = ws.Internal_DM_FocusedProject();
+            } catch (e4) {
+            }
+        }
+        if (project == null) {
+            return;
+        }
+        var doc = getFlattenedDocument(project);
+        if (doc == null) {
+            return;
+        }
+        var count = getMemberNumber(doc, "DM_ComponentCount");
+        schParamAvailable = count > 0;
+        for (var i = 0; i < count && i < 3000; i++) {
+            var comp = null;
+            try {
+                comp = doc.DM_Components(i);
+            } catch (e5) {
+                try {
+                    comp = doc.Internal_DM_Components(i);
+                } catch (e6) {
+                    break;
+                }
+            }
+            if (comp == null) {
+                break;
+            }
+            var map = {};
+            var pcount = getMemberNumber(comp, "DM_ParameterCount");
+            for (var j = 0; j < pcount; j++) {
+                var p = null;
+                try {
+                    p = comp.DM_Parameters(j);
+                } catch (e7) {
+                    try {
+                        p = comp.Internal_DM_Parameters(j);
+                    } catch (e8) {
+                        break;
+                    }
+                }
+                if (p == null) {
+                    break;
+                }
+                var pname = getMemberText(p, "DM_Name");
+                var pvalue = getMemberText(p, "DM_Value");
+                if (pname != "") {
+                    map[pname.toLowerCase()] = pvalue;
+                }
+            }
+            var uid = "";
+            try {
+                uid = toText(comp.DM_UniqueId_1);
+            } catch (e9) {
+            }
+            if (uid == "") {
+                uid = getMemberText(comp, "DM_UniqueId");
+            }
+            if (uid != "") {
+                schParamCache.byId[uid.toLowerCase()] = map;
+            }
+            if (map["designator"]) {
+                schParamCache.byRef[map["designator"].toLowerCase()] = map;
+            }
+        }
+    }
+
+    // read one parameter from the schematic component linked to the PCB component
+    function getSchematicParameter(Component, paramName) {
+        buildSchematicParameterCache();
+        if (schParamCache == null) {
+            return "";
+        }
+        var map = null;
+        var uid = "";
+        try {
+            uid = toText(Component.GetState_SourceUniqueId());
+        } catch (e) {
+        }
+        if (uid == "") {
+            try {
+                uid = toText(Component.SourceUniqueId);
+            } catch (e2) {
+            }
+        }
+        if (uid != "") {
+            map = schParamCache.byId[uid.toLowerCase()] || null;
+        }
+        if (map == null) {
+            var ref = "";
+            try {
+                ref = toText(Component.Name.Text);
+            } catch (e3) {
+            }
+            if (ref != "") {
+                map = schParamCache.byRef[ref.toLowerCase()] || null;
+            }
+        }
+        if (map == null) {
+            return "";
+        }
+        return map[paramName.toLowerCase()] || "";
+    }
+
     // 91% done
     function parseComponent(Component) {
         var res = {};
@@ -758,13 +984,20 @@ function parsePcb(config) {
         res["footprint"] = oFootprint;
 
         oComponent["ref"] = oFootprint.ref;
-        oComponent["val"] = Component.Comment.Text;
+        // the PCB itself does not store component parameters, read "Value" from the
+        // schematic component linked to this footprint (no fallback to Comment)
+        oComponent["val"] = getSchematicParameter(Component, "Value");
+        // keep the Comment, the "skip empty/dnp" filter is based on it
+        oComponent["comment"] = Component.Comment.Text;
+        // optional datasheet link parameters, used by the "Link" column
+        oComponent["linkdesc"] = getSchematicParameter(Component, "ComponentLink1Description");
+        oComponent["linkurl"] = getSchematicParameter(Component, "ComponentLink1URL");
         oComponent["footprint"] = Component.Pattern;
         oComponent["layer"] = oFootprint["layer"];
         oComponent["attr"] = null;
 
         res["angle"] = Component.Rotation.round();
-        res["itemkey"] = ["k", oComponent["ref"].slice(0, 1), oComponent["footprint"], oComponent["val"]].join("");
+        res["itemkey"] = ["k", oComponent["ref"].slice(0, 1), oComponent["footprint"], oComponent["val"], oComponent["comment"], oComponent["linkdesc"], oComponent["linkurl"]].join("");
         
         if (isSMD) {
             res["soldertype"] = "smd";
@@ -826,6 +1059,9 @@ function parsePcb(config) {
         Prim = Iter.NextPCBObject;
     }
     pcb.board.BoardIterator_Destroy(Iter);
+
+    // false when no schematic could be read, used to omit schematic-only columns
+    pcb["has_schematic"] = schParamAvailable;
 
     // parse freepads , all free pads mounted to a footprintNoBom to be rendered
     var footprintNoBom = {};
