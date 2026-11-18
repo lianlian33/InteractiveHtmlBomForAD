@@ -379,6 +379,7 @@ function loadSettings() {
 function overwriteSettings(newSettings) {
   initDone = false;
   Object.assign(settings, newSettings);
+  invalidateDarkenedFootprints();
   writeStorage("bomlayout", settings.bomlayout);
   writeStorage("bommode", settings.bommode);
   writeStorage("canvaslayout", settings.canvaslayout);

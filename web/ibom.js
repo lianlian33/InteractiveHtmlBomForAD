@@ -25,6 +25,20 @@ function redrawIfInitDone() {
   }
 }
 
+var pcbRedrawPending = false;
+
+// Coalesce multiple checkbox changes (e.g. check/uncheck all) into one redraw.
+function schedulePcbRedraw() {
+  if (pcbRedrawPending) {
+    return;
+  }
+  pcbRedrawPending = true;
+  window.requestAnimationFrame(function() {
+    pcbRedrawPending = false;
+    redrawIfInitDone();
+  });
+}
+
 function padsVisible(value) {
   writeStorage("padsVisible", value);
   settings.renderPads = value;
@@ -179,6 +193,10 @@ function createCheckboxChangeHandler(checkbox, references, row) {
     settings.checkboxStoredRefs[checkbox] = [...refsSet].join(",");
     writeStorage("checkbox_" + checkbox, settings.checkboxStoredRefs[checkbox]);
     updateCheckboxStats(checkbox);
+    if (darkenWhenChecked) {
+      invalidateDarkenedFootprints();
+      schedulePcbRedraw();
+    }
     EventHandler.emitEvent(IBOM_EVENT_TYPES.CHECKBOX_CHANGE_EVENT, eventArgs);
   }
 }
@@ -919,7 +937,9 @@ function setBomCheckboxes(value) {
 function setDarkenWhenChecked(value) {
   writeStorage("darkenWhenChecked", value);
   settings.darkenWhenChecked = value;
+  invalidateDarkenedFootprints();
   populateBomTable();
+  schedulePcbRedraw();
 }
 
 function prepCheckboxes() {
