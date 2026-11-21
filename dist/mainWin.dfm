@@ -134,7 +134,7 @@ object mainWin: TmainWin
           Width = 135
           Height = 17
           Caption = 'Component of th'
-          Checked = True
+          Checked = False
           State = cbChecked
           TabOrder = 2
         end

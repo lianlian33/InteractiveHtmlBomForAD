@@ -756,7 +756,7 @@ function parsePcb(config) {
     }
 
     // GetWorkSpace is a global scripting function; Client.GetDXPWorkspace is the fallback
-    function getWorkspace() {
+    function getWorkspace(non) {
         var ws = null;
         try {
             ws = GetWorkSpace;
@@ -782,7 +782,7 @@ function parsePcb(config) {
     }
 
     // read all parameters of the flattened schematic document once and cache them
-    function buildSchematicParameterCache() {
+    function buildSchematicParameterCache(non) {
         if (schParamTried) {
             return;
         }
@@ -1071,6 +1071,7 @@ function parsePcb(config) {
     footprintNoBom["layer"] = "F";
     footprintNoBom["drawings"] = [];
     footprintNoBom["pads"] = [];
+    footprintNoBom["not_in_bom"] = true;
 
     Iter = pcb.board.BoardIterator_Create; 
     Iter.AddFilter_ObjectSet(MkSet(ePadObject, eViaObject));

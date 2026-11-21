@@ -3,7 +3,7 @@ function startWin() {
     mainWin.Show(); 
 }
 
-function setChineseCaptions() {
+function setChineseCaptions(non) {
     TabSheet1.Caption = "\u5E38\u89C4";
     GroupBox1.Caption = "BOM \u8F93\u51FA\u4F4D\u7F6E";
     StaticText1.Caption = "\u76EE\u5F55";
@@ -54,7 +54,7 @@ function mainWinShow(Sender) {
 
             if (currentPcb != null) {
                 var currentPath = ExtractFilePath(currentPcb.FileName);
-                var filename = currentPath + "PnPout\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + ".html";
+                var filename = currentPath + "IBOMForAD_Out\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + "_IBOM.html";
                 TEditCurrentPcbPath.Text = filename;
                 TEditExtraFileName.Text = currentPath;
             } else {
@@ -76,7 +76,7 @@ function mainWinShow(Sender) {
 
         CbBlacklistEmpty.Checked = iniFile.ReadBool("General", "BlacklistEmpty", true);
         CbBlacklist1Pad.Checked = iniFile.ReadBool("General", "Blacklist1Pad", true);
-        CbBlacklistTh.Checked = iniFile.ReadBool("General", "BlacklistTh", true);
+        CbBlacklistTh.Checked = iniFile.ReadBool("General", "BlacklistTh", false);
         if (iniFile.ReadBool("General", "PcbOutlineMech1", false)) {
             RBtnMech1.Checked = true;
             RBtnKeepOutLayer.Checked = false;
@@ -113,7 +113,7 @@ function mainWinShow(Sender) {
 
             if (currentPcb != null) {
                 var currentPath = ExtractFilePath(currentPcb.FileName);
-                var filename = currentPath + "PnPout\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + ".html";
+                var filename = currentPath + "IBOMForAD_Out\\" + ExtractFileName(currentPcb.FileName).split(".")[0] + "_IBOM.html";
                 TEditCurrentPcbPath.Text = filename;
                 TEditExtraFileName.Text = currentPath;
             } else {
@@ -129,7 +129,7 @@ function mainWinShow(Sender) {
 
         CbBlacklistEmpty.Checked = true;
         CbBlacklist1Pad.Checked = true;
-        CbBlacklistTh.Checked = true;
+        CbBlacklistTh.Checked = false;
 
         CbIncludeTracksAndSolidPolygons.Checked = false;
         CbIncludeVias.Checked = false;
@@ -443,4 +443,3 @@ function getSaveDir(text) {
 
     return filename;
 }
-

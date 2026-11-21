@@ -240,11 +240,42 @@ function parseValue(val, ref) {
   return null;
 }
 
+// Natural, case-insensitive string comparison. Numbers embedded in a string
+// are compared by value, so "C2" < "C10" and "MSOP-8" < "MSOP-10".
+function naturalCompare(a, b) {
+  a = String(a).toLowerCase();
+  b = String(b).toLowerCase();
+  var ia = 0;
+  var ib = 0;
+  while (ia < a.length && ib < b.length) {
+    var ca = a.charCodeAt(ia);
+    var cb = b.charCodeAt(ib);
+    var da = ca >= 48 && ca <= 57;
+    var db = cb >= 48 && cb <= 57;
+    if (da && db) {
+      var sa = ia;
+      var sb = ib;
+      while (ia < a.length && a.charCodeAt(ia) >= 48 && a.charCodeAt(ia) <= 57) ia++;
+      while (ib < b.length && b.charCodeAt(ib) >= 48 && b.charCodeAt(ib) <= 57) ib++;
+      var na = parseInt(a.substring(sa, ia), 10);
+      var nb = parseInt(b.substring(sb, ib), 10);
+      if (na != nb) return na < nb ? -1 : 1;
+    } else {
+      if (ca != cb) return ca < cb ? -1 : 1;
+      ia++;
+      ib++;
+    }
+  }
+  var ra = a.length - ia;
+  var rb = b.length - ib;
+  if (ra != rb) return ra < rb ? -1 : 1;
+  return 0;
+}
+
 function valueCompare(a, b, stra, strb) {
   if (a === null && b === null) {
     // Failed to parse both values, compare them as strings.
-    if (stra != strb) return stra > strb ? 1 : -1;
-    else return 0;
+    return naturalCompare(stra, strb);
   } else if (a === null) {
     return 1;
   } else if (b === null) {
@@ -252,7 +283,7 @@ function valueCompare(a, b, stra, strb) {
   } else {
     if (a.unit != b.unit) return a.unit > b.unit ? 1 : -1;
     else if (a.val != b.val) return a.val > b.val ? 1 : -1;
-    else if (a.extra != b.extra) return a.extra > b.extra ? 1 : -1;
+    else if ((a.extra || "") != (b.extra || "")) return naturalCompare(a.extra || "", b.extra || "");
     else return 0;
   }
 }

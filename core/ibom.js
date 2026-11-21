@@ -77,7 +77,7 @@ function sortModules(modules) {
             }
 
             // sort by itemkey
-            if (modules[j].itemkey > modules[k].itemkey) {   ///  <
+            if (modules[j].itemkey < modules[k].itemkey) {
                 tmp.push(modules[j]);
                 j++;
             } else if (modules[j].itemkey == modules[k].itemkey) {
@@ -379,7 +379,7 @@ function main() {
         return;
     };
     
-    var filename = pcb.boardpath + "PnPout\\" + "extra_data.txt";
+    var filename = pcb.boardpath + "IBOMForAD_Out\\" + "extra_data.txt";
     // var extra_data = loadExtraData(filename);
     var extra_data;
 
@@ -399,7 +399,7 @@ function main() {
     config.htmlConfig["settings_version"] = String(new Date().getTime());
     var config_js = "var config = " + JSON.stringify(config.htmlConfig);
     var html = generateFile(b, config_js);
-    filename = pcb.boardpath + "PnPout\\" + pcb.boardname.split(".")[0] + ".html";
+    filename = pcb.boardpath + "IBOMForAD_Out\\" + pcb.boardname.split(".")[0] + "_IBOM.html";
     save2file(html, filename, false);
 
     try {
@@ -410,4 +410,3 @@ function main() {
         showmessage(e.message);
     };
 }
-
