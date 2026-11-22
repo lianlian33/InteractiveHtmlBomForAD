@@ -55,7 +55,7 @@ function getConfig(non) {
 		"polys": includeTracks,
 		"vias": iniFile ? iniFile.ReadBool("General", "IncludeVias", false) : false,
 		"nets": iniFile ? iniFile.ReadBool("General", "IncludeNets", false) : false,
-		"polyHatched": iniFile ? iniFile.ReadBool("General", "IncludeHatched", false) : false
+		"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
 	};
 
 	config["bomFilter"] = {
