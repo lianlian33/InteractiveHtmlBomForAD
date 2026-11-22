@@ -1,74 +1,72 @@
 
 function getConfig(non) {
 	var iniFileName = CURRENT_PATH + "config.ini";
-	var config = {};
+	var iniFile = null;
 	if (FileExists(iniFileName)) {
-		var iniFile = TIniFile.Create(iniFileName);
-		config.PcbOutlineMech1 = iniFile.ReadBool("General", "PcbOutlineMech1", false);
-		config["htmlConfig"] = {
-			"redraw_on_drag": iniFile.ReadBool("HtmlDefaults", "ContinuousRedrawOnDrag", true),
-			"bom_view": "left-right", 
-			"layer_view": "FB",
-			"show_silkscreen": iniFile.ReadBool("HtmlDefaults", "ShowSilkscreen", true),
-			"checkboxes": iniFile.ReadString("HtmlDefaults", "HtmlCheckboxes", "Sourced,Placed"),
-			"dark_mode": iniFile.ReadBool("HtmlDefaults", "DarkMode", false),
-			"highlight_pin1": iniFile.ReadBool("HtmlDefaults", "HighlightPin1", false),
-			"show_pads": iniFile.ReadBool("HtmlDefaults", "ShowFootprintPads", true),
-			"show_fabrication": iniFile.ReadBool("HtmlDefaults", "ShowFabricationLayer", false),
-			"extra_fields": [], 
-			"board_rotation": iniFile.ReadInteger("HtmlDefaults", "PcbRotation", 36)
-		};
-		config["include"] = {
-			"vias": iniFile.ReadBool("General", "IncludeVias", false),
-			"nets": iniFile.ReadBool("General", "IncludeNets", false),
-			"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
-		};
-		if (iniFile.ReadBool("General", "IncludeTracksAndSolidPolygons", false)) {
-			config["include"]["tracks"] = true;
-			config["include"]["polys"] = true;
-		} else {
-			config["include"]["tracks"] = false;
-			config["include"]["polys"] = false;
-		}
-
-		config["bomFilter"] = {
-			"skipempty": iniFile.ReadBool("General", "BlacklistEmpty", true),
-			"skiponepad": iniFile.ReadBool("General", "Blacklist1Pad", true),
-			"skipth": iniFile.ReadBool("General", "BlacklistTh", false)
-		}
-
-		iniFile.Free;
-	} else {
-		config.PcbOutlineMech1 = false;
-		config["htmlConfig"] = {
-			"redraw_on_drag": true,
-			"bom_view": "left-right", 
-			"layer_view": "FB",
-			"show_silkscreen": true,
-			"checkboxes": "Sourced,Placed", 
-			"dark_mode": false,
-			"highlight_pin1": false, 
-			"show_pads": true,
-			"show_fabrication": false, 
-			"extra_fields": [], 
-			// "extra_fields": ["PartNum"],   //add ibom html column
-			"board_rotation": 0
-		};
-
-		config["include"] = {
-			"tracks": false, // not support arc for now, so parse one arc to a few tracks. slow.
-			"vias": false,  // so many objects in pcbdata slow down the speed of generating bom.
-			"nets": false,
-			"polys": false, 
-			"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
-		};
-
-		config["bomFilter"] = {
-			"skipempty": true,
-			"skiponepad": true,
-			"skipth": false
-		}
+		iniFile = TIniFile.Create(iniFileName);
 	}
-	return config;
-} 
 
+	// when config.ini is missing, use the initial state of the settings dialog (mainWinShow)
+	var config = {};
+	config.PcbOutlineMech1 = iniFile ? iniFile.ReadBool("General", "PcbOutlineMech1", false) : false;
+
+	var bomViewOnly = iniFile ? iniFile.ReadBool("HtmlDefaults", "BomViewOnly", false) : false;
+	var bomViewLeftRight = iniFile ? iniFile.ReadBool("HtmlDefaults", "BomViewLeftDrawingRight", true) : true;
+	var bomViewTopBottom = iniFile ? iniFile.ReadBool("HtmlDefaults", "BomViewTopDrawingBottom", false) : false;
+	var layerFrontOnly = iniFile ? iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontOnly", false) : false;
+	var layerFrontBack = iniFile ? iniFile.ReadBool("HtmlDefaults", "PcbLayerFrontAndBack", true) : true;
+	var layerBackOnly = iniFile ? iniFile.ReadBool("HtmlDefaults", "PcbLayerBackOnly", false) : false;
+
+	var bomView = "left-right";
+	if (bomViewOnly) {
+		bomView = "bom-only";
+	} else if (bomViewLeftRight) {
+		bomView = "left-right";
+	} else if (bomViewTopBottom) {
+		bomView = "top-bottom";
+	}
+
+	var layerView = "FB";
+	if (layerFrontOnly) {
+		layerView = "F";
+	} else if (layerFrontBack) {
+		layerView = "FB";
+	} else if (layerBackOnly) {
+		layerView = "B";
+	}
+
+	config["htmlConfig"] = {
+		"redraw_on_drag": iniFile ? iniFile.ReadBool("HtmlDefaults", "ContinuousRedrawOnDrag", true) : true,
+		"bom_view": bomView,
+		"layer_view": layerView,
+		"show_silkscreen": iniFile ? iniFile.ReadBool("HtmlDefaults", "ShowSilkscreen", true) : true,
+		"checkboxes": iniFile ? iniFile.ReadString("HtmlDefaults", "HtmlCheckboxes", "Sourced,Placed") : "Sourced,Placed",
+		"dark_mode": iniFile ? iniFile.ReadBool("HtmlDefaults", "DarkMode", false) : false,
+		"highlight_pin1": iniFile ? iniFile.ReadBool("HtmlDefaults", "HighlightPin1", false) : false,
+		"show_pads": iniFile ? iniFile.ReadBool("HtmlDefaults", "ShowFootprintPads", true) : true,
+		"show_fabrication": iniFile ? iniFile.ReadBool("HtmlDefaults", "ShowFabricationLayer", false) : false,
+		"extra_fields": [],
+		"board_rotation": iniFile ? iniFile.ReadInteger("HtmlDefaults", "PcbRotation", 0) : 0
+	};
+
+	var includeTracks = iniFile ? iniFile.ReadBool("General", "IncludeTracksAndSolidPolygons", false) : false;
+	config["include"] = {
+		"tracks": includeTracks,
+		"polys": includeTracks,
+		"vias": iniFile ? iniFile.ReadBool("General", "IncludeVias", false) : false,
+		"nets": iniFile ? iniFile.ReadBool("General", "IncludeNets", false) : false,
+		"polyHatched": false  // a group of tracks and arcs( arc to tracks), very slow.
+	};
+
+	config["bomFilter"] = {
+		"skipempty": iniFile ? iniFile.ReadBool("General", "BlacklistEmpty", true) : true,
+		"skiponepad": iniFile ? iniFile.ReadBool("General", "Blacklist1Pad", true) : true,
+		"skipth": iniFile ? iniFile.ReadBool("General", "BlacklistTh", false) : false
+	};
+
+	if (iniFile) {
+		iniFile.Free;
+	}
+
+	return config;
+}

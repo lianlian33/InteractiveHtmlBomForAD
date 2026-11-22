@@ -418,9 +418,7 @@ function populateBomHeader() {
   }
   if (settings.bommode == "netlist") {
     th = createColumnHeader("Net name", "bom-netname", (a, b) => {
-      if (a > b) return -1;
-      if (a < b) return 1;
-      return 0;
+      return naturalCompare(a, b);
     });
     tr.appendChild(th);
   } else {
@@ -434,7 +432,8 @@ function populateBomHeader() {
     tr.appendChild(createColumnHeader("References", "References", (a, b) => {
       var i = 0;
       while (i < a[3].length && i < b[3].length) {
-        if (a[3][i] != b[3][i]) return a[3][i] > b[3][i] ? 1 : -1;
+        var cmp = naturalCompare(a[3][i][0], b[3][i][0]);
+        if (cmp != 0) return cmp;
         i++;
       }
       return a[3].length - b[3].length;
@@ -445,8 +444,7 @@ function populateBomHeader() {
         return (a, b) => {
           var fa = a[4][fieldIndex];
           var fb = b[4][fieldIndex];
-          if (fa != fb) return fa > fb ? 1 : -1;
-          else return 0;
+          return naturalCompare(fa, fb);
         }
       }
       for (var i in config.extra_fields) {
@@ -460,14 +458,10 @@ function populateBomHeader() {
       }));
     }
     tr.appendChild(createColumnHeader("Comment", "Comment", (a, b) => {
-      var ca = bomFieldText(a[5]);
-      var cb = bomFieldText(b[5]);
-      if (ca != cb) return ca > cb ? 1 : -1;
-      else return 0;
+      return naturalCompare(bomFieldText(a[5]), bomFieldText(b[5]));
     }));
     tr.appendChild(createColumnHeader("Footprint", "Footprint", (a, b) => {
-      if (a[2] != b[2]) return a[2] > b[2] ? 1 : -1;
-      else return 0;
+      return naturalCompare(a[2], b[2]);
     }));
     if (settings.bommode == "grouped") {
       tr.appendChild(createColumnHeader("Quantity", "Quantity", (a, b) => {
@@ -478,8 +472,7 @@ function populateBomHeader() {
       tr.appendChild(createColumnHeader("Link", "Link", (a, b) => {
         var la = a[7] ? bomFieldText(a[7][0]) : "-";
         var lb = b[7] ? bomFieldText(b[7][0]) : "-";
-        if (la != lb) return la > lb ? 1 : -1;
-        else return 0;
+        return naturalCompare(la, lb);
       }));
     }
   }
@@ -757,6 +750,7 @@ function populateMetadata() {
   for (var i = 0; i < pcbdata.footprints.length; i++) {
     if (pcbdata.bom.skipped.includes(i)) continue;
     var mod = pcbdata.footprints[i];
+    if (mod.not_in_bom) continue;
     if (mod.layer == "F") {
       fp_f++;
     } else {
@@ -1016,7 +1010,10 @@ function populateDarkenWhenCheckedOptions() {
 
 function updateCheckboxStats(checkbox) {
   var checked = getStoredCheckboxRefs(checkbox).size;
-  var total = pcbdata.footprints.length - pcbdata.bom.skipped.length;
+  var total = 0;
+  for (var i = 0; i < pcbdata.footprints.length; i++) {
+    if (!pcbdata.footprints[i].not_in_bom && !pcbdata.bom.skipped.includes(i)) total++;
+  }
   var percent = checked * 100.0 / total;
   var td = document.getElementById("checkbox-stats-" + checkbox);
   td.firstChild.style.width = percent + "%";
