@@ -8,7 +8,7 @@ function setChineseCaptions(non) {
     GroupBox1.Caption = "BOM \u8F93\u51FA\u4F4D\u7F6E";
     StaticText1.Caption = "\u76EE\u5F55";
     GroupBox3.Caption = "PCB \u9644\u52A0\u6570\u636E";
-    CbIncludeTracksAndSolidPolygons.Caption = "\u5305\u542B\u8D70\u7EBF/\u5B9E\u5FC3\u533A\u57DF";
+    CbIncludeTracksAndSolidPolygons.Caption = "\u5305\u542B\u8D70\u7EBF/\u533A\u57DF";
     CbIncludeVias.Caption = "\u5305\u542B\u8FC7\u5B54";
     CbIncludeHatched.Caption = "\u5305\u542B\u7F51\u683C\u94FA\u94DC";
     CbIncludeNets.Caption = "\u5305\u542B\u7F51\u7EDC";
