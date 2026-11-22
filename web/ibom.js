@@ -741,6 +741,9 @@ function changeCanvasLayout(layout) {
   settings.canvaslayout = layout;
   writeStorage("canvaslayout", layout);
   resizeAll();
+  if (settings.bommode == "netlist" && !("nets" in pcbdata)) {
+    settings.bommode = "grouped";
+  }
   changeBomMode(settings.bommode);
 }
 
