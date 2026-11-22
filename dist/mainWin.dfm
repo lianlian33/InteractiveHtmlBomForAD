@@ -97,7 +97,6 @@ object mainWin: TmainWin
           Width = 87
           Height = 17
           Caption = 'Include nets'
-          Enabled = False
           TabOrder = 3
         end
       end

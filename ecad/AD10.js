@@ -119,6 +119,24 @@ function parsePcb(config) {
     pcb.Layers.KEEP_OUT_LAYER = String2Layer("Keep Out Layer");
     pcb.Layers.MULTI_LAYER = String2Layer("Multi Layer");
 
+    var netNames = {};
+
+    function getNetName(Prim) {
+        if (!config.include.nets) {
+            return "";
+        }
+        try {
+            if (Prim.InNet) {
+                var net = Prim.Net;
+                if (net != null && net.Name != "") {
+                    netNames[net.Name] = true;
+                    return net.Name;
+                }
+            }
+        } catch (e) {}
+        return "";
+    }
+
     function parseTrack(Prim) {
         var res = {};
         var start = [CoordToMMs(Prim.x1).round(), -CoordToMMs(Prim.y1).round()];
@@ -134,9 +152,10 @@ function parsePcb(config) {
             res["width"] = CoordToMMs(Prim.Width).round();
         } 
 
-        if (Prim.InNet) {
-            // res["net"] = Prim.Net.Name;
-        };
+        var netname = getNetName(Prim);
+        if (netname != "") {
+            res["net"] = netname;
+        }
 
         return res;
     }
@@ -144,6 +163,7 @@ function parsePcb(config) {
     function parseArc(Prim) {
         var res = {};
         var width = CoordToMMs(Prim.LineWidth).round();
+        var netname = getNetName(Prim);
         function arc2path(cx, cy, radius, startangle, endangle) {
             var startrad = Degrees2Radians(startangle);
             var endrad = Degrees2Radians(endangle);
@@ -210,6 +230,12 @@ function parsePcb(config) {
                 }     
             }
 
+            if (netname != "") {
+                for (var ti = 0; ti < tracks.length; ti++) {
+                    tracks[ti]["net"] = netname;
+                }
+            }
+
             return tracks;
         }
 
@@ -224,6 +250,9 @@ function parsePcb(config) {
             res["start"] = [CoordToMMs(Prim.XCenter).round(), -CoordToMMs(Prim.YCenter).round()];
             res["radius"] = CoordToMMs(Prim.Radius).round();
             res["layer"] = Prim.Layer;
+            if (netname != "") {
+                res["net"] = netname;
+            }
             return res;
         }
     }
@@ -345,6 +374,11 @@ function parsePcb(config) {
             delete res["offset"];
         }
 
+        var netname = getNetName(Prim);
+        if (netname != "") {
+            res["net"] = netname;
+        }
+
         pads.push(res);
 
         return pads;
@@ -419,8 +453,9 @@ function parsePcb(config) {
             res["drillshape"] = "circle";
         }
 
-        if (Prim.InNet) {
-            // res["net"] = Prim.Net.Name;
+        var netname = getNetName(Prim);
+        if (netname != "") {
+            res["net"] = netname;
         }
         vias.push(res);
 
@@ -451,10 +486,10 @@ function parsePcb(config) {
         res["svgpath"] =  ["M", tcorner1, "L", tcorner2, "L", tcorner3, "L", tcorner4, "Z"].join(" ");
         res["type"] = "polygon";
         res["layer"] = Prim.Layer;
-       
-       if (Prim.InNet) {
-        // res.net = ""; 
-       } else {}
+        var netname = getNetName(Prim);
+        if (netname != "") {
+            res["net"] = netname;
+        }
 
         // if (!Prim.IsFreePrimitive) {
         //     res['free'] = false;
@@ -488,9 +523,10 @@ function parsePcb(config) {
         res["type"] = "polygon";
         res["svgpath"] = ["M", polygons.shift(), "L", polygons.join("L"), "Z "].join("") + holes_svg.join(""); 
         res["layer"] = Prim.Layer;
-        if (Prim.InNet) {
-            // res["net"] = Prim.Net.Name;
-        } else {}
+        var netname = getNetName(Prim);
+        if (netname != "") {
+            res["net"] = netname;
+        }
 
         return res;
     }
@@ -539,6 +575,24 @@ function parsePcb(config) {
             hatchedAll2One["layer"] = hatched_drawings[0].layer;
             drawings.push(hatchedAll2One);
         }
+
+        if (config.include.nets) {
+            var netname = getNetName(Polygon);
+            if (netname == "") {
+                for (var di = 0; di < drawings.length; di++) {
+                    if (drawings[di]["net"]) {
+                        netname = drawings[di]["net"];
+                        break;
+                    }
+                }
+            }
+            if (netname != "") {
+                for (var di = 0; di < drawings.length; di++) {
+                    drawings[di]["net"] = netname;
+                }
+            }
+        }
+
         return drawings;
     }
 
@@ -1207,6 +1261,15 @@ function parsePcb(config) {
         str_text.push(pcb.texts[i].text);
     }
     pcb.pcbdata.font_data = parseTextToNewStrokeFont(str_text.join(""));
+
+    if (config.include.nets) {
+        var nets = [];
+        for (var netname in netNames) {
+            nets.push(netname);
+        }
+        nets.sort();
+        pcb.pcbdata["nets"] = nets;
+    }
 
     PCBServer.PostProcess;
 

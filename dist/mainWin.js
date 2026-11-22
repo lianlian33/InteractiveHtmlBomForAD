@@ -70,9 +70,8 @@ function mainWinShow(Sender) {
         CbIncludeTracksAndSolidPolygons.Checked = iniFile.ReadBool("General", "IncludeTracksAndSolidPolygons", false);
         CbIncludeVias.Checked = iniFile.ReadBool("General", "IncludeVias", false);
         // CbIncludeHatched.Checked = iniFile.ReadBool("General", "IncludeHatched", false);
-        // CbIncludeNets.Checked = iniFile.ReadBool("General", "IncludeNets", false);
         CbIncludeHatched.Checked = false;
-        CbIncludeNets.Checked = false;
+        CbIncludeNets.Checked = iniFile.ReadBool("General", "IncludeNets", false);
 
         CbBlacklistEmpty.Checked = iniFile.ReadBool("General", "BlacklistEmpty", true);
         CbBlacklist1Pad.Checked = iniFile.ReadBool("General", "Blacklist1Pad", true);
