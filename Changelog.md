@@ -3,6 +3,7 @@
 ### 界面中文化
 
 - 设置窗口的“General”和“HTML defaults”两个标签页以及生成的HTML已全部翻译为中文。
+
   <img width="300" alt="常规设置窗口" src="./assets/Win-General.png"/> <img width="300" alt="HTML默认设置窗口" src="./assets/Win-HTML-defaults.png"/>
 
 ### BOM 表格增强
