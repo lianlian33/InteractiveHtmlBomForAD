@@ -645,7 +645,9 @@ function parsePcb(config) {
             res.attr.push("inverted");
         }
         res["type"] = "text";
-        res["text"] = Prim.Text;
+        // 多行文本可能使用 CRLF，只保留 LF，避免网页端为 '\r' 查找不存在的字形
+        // 而抛异常中断整块画布重绘（表现为某一层或两层都不显示）。
+        res["text"] = Prim.Text.replace(/\r/g, "");
         res["angle"] = Prim.Rotation.round();
         res["layer"] = Prim.Layer;
 
@@ -903,70 +905,16 @@ function parsePcb(config) {
     }
 
     // 91% done
-    function parseComponent(Component) {
+    function parseComponent(Component, compPrim) {
         var res = {};
         var oFootprint = {};
         var oComponent = {};
-        var pads = [];
-
-        var Iter, Prim;
-        var isSMD = true;
-        Iter = Component.GroupIterator_Create;
-        Iter.AddFilter_ObjectSet(MkSet(ePadObject));
-        Iter.AddFilter_LayerSet(AllLayers);
-        Prim = Iter.FirstPCBObject;
-        while (Prim != null) {
-            pads = pads.concat(parsePad(Prim));
-            if (isSMD && Prim.Layer == eMultiLayer) {
-                isSMD = false;
-            }
-            Prim = Iter.NextPCBObject;
-        }
-        Component.GroupIterator_Destroy(Iter);
-
-        oFootprint["drawings"] = [];
-        Iter = Component.GroupIterator_Create;
-        Iter.AddFilter_ObjectSet(MkSet(eTrackObject, eArcObject, eFillobject, eRegionObject));
-        Iter.AddFilter_LayerSet(MkSet(eTopLayer, eBottomLayer));
-        Prim = Iter.FirstPCBObject;
-        while (Prim != null) {
-            if (Prim.Layer == eTopLayer) {
-                switch (Prim.ObjectId) {
-                    case eTrackObject:
-                        oFootprint["drawings"].push({"layer": "F", "drawing": parseTrack(Prim)});
-                        break;
-                    case eArcObject:
-                        oFootprint["drawings"].push({"layer": "F", "drawing": parseArc(Prim)});
-                        break;
-                    case eFillobject:
-                        oFootprint["drawings"].push({"layer": "F", "drawing": parseFill(Prim)});
-                        break;
-                    case eRegionObject:
-                        oFootprint["drawings"].push({"layer": "F", "drawing": parseRegion(Prim)});
-                        break;
-                    default:
-                }
-            } 
-            else if (Prim.Layer == eBottomLayer) {
-                switch (Prim.ObjectId) {
-                    case eTrackObject:
-                        oFootprint["drawings"].push({"layer": "B", "drawing": parseTrack(Prim)});
-                        break;
-                    case eArcObject:
-                        oFootprint["drawings"].push({"layer": "B", "drawing": parseArc(Prim)});
-                        break;
-                    case eFillobject:
-                        oFootprint["drawings"].push({"layer": "B", "drawing": parseFill(Prim)});
-                        break;
-                    case eRegionObject:
-                        oFootprint["drawings"].push({"layer": "B", "drawing": parseRegion(Prim)});
-                        break;
-                    default:
-                }
-            }
-            Prim = Iter.NextPCBObject;
-        }
-        Component.GroupIterator_Destroy(Iter);
+        // 元件的焊盘和图形在 parsePcb 中用整板迭代器统一预收集：
+        // 元件组迭代器在 AD24 中无法使用 AddFilter_Method，且可能跳过位于隐藏层上的图元，
+        // 导致导出后某一层甚至两层都不显示。
+        var pads = compPrim ? compPrim.pads : [];
+        var isSMD = compPrim ? !compPrim.hasMultiPad : true;
+        oFootprint["drawings"] = compPrim ? compPrim.drawings : [];
 
         var bbox = get_bbox(Component);
         oFootprint["center"] = bbox.center;
@@ -1048,14 +996,65 @@ function parsePcb(config) {
     pcb.pos.push(CoordToMMs(board.XOrigin).round());
     pcb.pos.push(CoordToMMs(board.YOrigin).round());
 
-    var Iter, Prim; 
+    var Iter, Prim;
+    // 用一个整板迭代器预先收集所有元件的焊盘和图形。整板迭代器支持 eProcessAll，
+    // 不受图层可见性影响；元件组迭代器在 AD24 中无法使用 AddFilter_Method，
+    // 隐藏层上的图元可能被漏掉，导致导出后对应图层不显示。
+    var compPrims = {};
+    Iter = pcb.board.BoardIterator_Create;
+    Iter.AddFilter_ObjectSet(MkSet(ePadObject, eTrackObject, eArcObject, eFillobject, eRegionObject));
+    Iter.AddFilter_LayerSet(AllLayers);
+    Iter.AddFilter_Method(eProcessAll);
+    Prim = Iter.FirstPCBObject;
+    while (Prim != null) {
+        var inComponent = (Prim.ObjectId == ePadObject) ? !Prim.IsFreePrimitive : Prim.InComponent;
+        if (inComponent) {
+            var compRef = Prim.Component.Name.Text;
+            var compPrim = compPrims[compRef];
+            if (compPrim == null) {
+                compPrim = {"pads": [], "drawings": [], "hasMultiPad": false};
+                compPrims[compRef] = compPrim;
+            }
+            if (Prim.ObjectId == ePadObject) {
+                compPrim.pads = compPrim.pads.concat(parsePad(Prim));
+                if (Prim.Layer == eMultiLayer) {
+                    compPrim.hasMultiPad = true;
+                }
+            }
+            else if (Prim.Layer == eTopLayer || Prim.Layer == eBottomLayer) {
+                var side = (Prim.Layer == eTopLayer) ? "F" : "B";
+                var drawing = null;
+                switch (Prim.ObjectId) {
+                    case eTrackObject:
+                        drawing = parseTrack(Prim);
+                        break;
+                    case eArcObject:
+                        drawing = parseArc(Prim);
+                        break;
+                    case eFillobject:
+                        drawing = parseFill(Prim);
+                        break;
+                    case eRegionObject:
+                        drawing = parseRegion(Prim);
+                        break;
+                    default:
+                }
+                if (drawing != null) {
+                    compPrim.drawings.push({"layer": side, "drawing": drawing});
+                }
+            }
+        }
+        Prim = Iter.NextPCBObject;
+    }
+    pcb.board.BoardIterator_Destroy(Iter);
+
     Iter = pcb.board.BoardIterator_Create;
     Iter.AddFilter_ObjectSet(MkSet(eComponentObject));
     Iter.AddFilter_LayerSet(AllLayers);
     Iter.AddFilter_Method(eProcessAll);
     Prim = Iter.FirstPCBObject;
     while (Prim != null) {
-        pcb.modules.push(parseComponent(Prim));
+        pcb.modules.push(parseComponent(Prim, compPrims[Prim.Name.Text]));
         Prim = Iter.NextPCBObject;
     }
     pcb.board.BoardIterator_Destroy(Iter);

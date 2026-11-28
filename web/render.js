@@ -42,7 +42,8 @@ function drawText(ctx, text, color) {
     tilt = 0.125;
   }
   var interline = text.height * 1.5 + text.thickness;
-  var txt = text.text.split("\n");
+  // 去掉 CR：CRLF 文本中的 '\r' 在字体里没有对应字形，会中断整块画布重绘。
+  var txt = text.text.replace(/\r/g, "").split("\n");
   // KiCad ignores last empty line.
   if (txt[txt.length - 1] == '') txt.pop();
   ctx.rotate(deg2rad(angle));
@@ -60,7 +61,9 @@ function drawText(ctx, text, color) {
           if (j == txt[i].length)
             break;
         }
-        lineWidth += pcbdata.font_data[txt[i][j]].w * text.width;
+        var glyphWidth = pcbdata.font_data[txt[i][j]];
+        // 未知字形按空格宽度处理，避免抛异常导致整块画布重绘中断。
+        lineWidth += (glyphWidth ? glyphWidth.w : pcbdata.font_data[' '].w) * text.width;
       }
     }
     var offsetx = -lineWidth * (text.justify[0] + 1) / 2;
@@ -79,6 +82,10 @@ function drawText(ctx, text, color) {
         }
       }
       var glyph = pcbdata.font_data[txt[i][j]];
+      if (!glyph) {
+        offsetx += pcbdata.font_data[' '].w * text.width;
+        continue;
+      }
       if (inOverbar) {
         var overbarStart = [offsetx, -text.height * 1.4 + offsety];
         var overbarEnd = [offsetx + text.width * glyph.w, overbarStart[1]];
@@ -626,6 +633,9 @@ function resizeCanvas(layerdict) {
 }
 
 function resizeAll() {
+  // window.onresize 在脚本解析阶段即被赋值，resize 事件可能在 initRender
+  // 创建画布之前触发，此时直接返回。
+  if (typeof allcanvas === "undefined") return;
   resizeCanvas(allcanvas.front);
   resizeCanvas(allcanvas.back);
 }
